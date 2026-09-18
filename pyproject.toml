@@ -1,0 +1,50 @@
+[project]
+name = "itda-hub"
+version = "0.1.0"
+description = "잇다 허브 — 도구함을 골라 담고 한 번의 로그인으로 Claude·Cowork 에 연결하는 오픈소스 MCP 허브 서비스 (Django · django-itda · fastmcp)"
+readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{ name = "itda-work", email = "dev@itda.work" }]
+requires-python = ">=3.12"
+dependencies = [
+    "django>=5.2,<5.3",
+    "django-itda",
+    "django-allauth[socialaccount]>=65.19",
+    "django-oauth-toolkit>=3.4.1,<4",
+    "fastmcp>=4,<5",
+    "httpx>=0.28",
+    "cryptography>=45",
+    "whitenoise>=6.9",
+    "uvicorn[standard]>=0.34",
+    "gunicorn>=23",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3",
+    "pytest-django>=4.11",
+    "ruff>=0.12",
+]
+
+[tool.uv.sources]
+django-itda = { git = "https://github.com/itda-work/django-itda", rev = "main" }
+
+[tool.pytest.ini_options]
+DJANGO_SETTINGS_MODULE = "hub.settings"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.format]
+quote-style = "single"
+
+[tool.ruff.lint]
+# Django 관용구(Meta 의 리스트·마이그레이션 필드 목록)는 가변 클래스 속성이 정상이다.
+ignore = ["RUF012"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/migrations/*" = ["E501", "RUF012"]

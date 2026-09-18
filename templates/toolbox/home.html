@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>도구함</h1>
+<p>담은 도구가 Claude·Cowork 연결 시 동의 화면의 스코프가 됩니다. 커스텀 커넥터 URL: <code>{{ request.scheme }}://{{ request.get_host }}/mcp</code></p>
+<table>
+<tr><th>도구</th><th>출처</th><th>자격증명</th><th>도구함</th></tr>
+{% for tool, entry in rows %}
+<tr>
+  <td><strong>{{ tool.name }}</strong><br><small>{{ tool.description }}</small><br><code>{{ tool.scope }}</code></td>
+  <td>{{ tool.provider }}</td>
+  <td>{{ tool.get_credential_display }}{% if entry and tool.setting_key %} · <a href="{% url 'toolbox:setting' tool.slug %}">설정</a>{% endif %}</td>
+  <td>{% if entry %}<form method="post" action="{% url 'toolbox:remove' tool.slug %}">{% csrf_token %}<button>빼기</button></form>{% else %}<form method="post" action="{% url 'toolbox:add' tool.slug %}">{% csrf_token %}<button>담기</button></form>{% endif %}</td>
+</tr>
+{% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,10 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{{ tool.name }} 설정</h1>
+<form method="post">{% csrf_token %}
+{% if tool.credential == 'shared' %}<p><label><input type="checkbox" name="use_shared" {% if entry.use_shared_credential %}checked{% endif %}> 관리자 공용 키 사용</label></p>{% endif %}
+{% if tool.setting_key %}<p><label>{{ tool.setting_key }} <input type="password" name="value" autocomplete="off" placeholder="{% if has_value %}저장된 값이 있습니다. 바꾸려면 입력{% else %}값 입력{% endif %}"></label></p>{% endif %}
+<button>저장</button> <a href="{% url 'toolbox:home' %}">돌아가기</a>
+</form>
+<p><small>값은 암호화해 저장하고 다시 표시하지 않습니다.</small></p>
+{% endblock %}

@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}잇다 허브{% endblock %}</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 860px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; }
+  nav a { margin-right: 1rem; } table { border-collapse: collapse; width: 100%; }
+  td, th { border-bottom: 1px solid #ddd; padding: .5rem; text-align: left; vertical-align: top; }
+  .msg { background: #eef; padding: .5rem 1rem; margin: .5rem 0; } code { background: #f4f4f4; padding: 0 .3rem; }
+</style>
+</head>
+<body>
+<nav>
+  <a href="{% url 'toolbox:home' %}">도구함</a>
+  <a href="{% url 'trajectory:mine' %}">궤적</a>
+  {% if user.is_authenticated %}<span>{{ user.email }}</span> · <form method="post" action="{% url 'account_logout' %}" style="display:inline">{% csrf_token %}<button>로그아웃</button></form>{% else %}<a href="{% url 'account_login' %}">로그인</a>{% endif %}
+</nav>
+{% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}
+{% block content %}{% endblock %}
+</body>
+</html>
