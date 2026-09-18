@@ -44,6 +44,15 @@ def test_토큰의_스코프만큼만_도구가_보인다(hub_env, monkeypatch):
     assert sorted(t.name for t in asyncio.run(mcp.list_tools())) == ['kosis_search', 'weather_now']
 
 
+def test_introspection_주소는_환경변수가_우선한다(hub_env, monkeypatch):
+    """compose 안에서는 공개 주소(localhost)가 자기 자신이라 서비스 이름으로 가야 한다."""
+    from mcp_server.server import build
+
+    assert build().auth.token_verifier.introspection_url == 'https://hub.example.test/o/introspect/'
+    monkeypatch.setenv('HUB_INTROSPECTION_URL', 'http://web:8000/o/introspect/')
+    assert build().auth.token_verifier.introspection_url == 'http://web:8000/o/introspect/'
+
+
 def test_환경변수가_비면_명시_에러(monkeypatch):
     monkeypatch.delenv('HUB_INTROSPECTION_CLIENT_ID', raising=False)
     from mcp_server.server import build

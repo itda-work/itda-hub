@@ -10,9 +10,11 @@ from django.views.generic import RedirectView
 from oauth2_provider.urls import metadata_urlpatterns
 
 from apps.oauth.views import ToolboxAuthorizationView
+from hub.views import healthz
 
 urlpatterns = [
     path('', RedirectView.as_view(pattern_name='toolbox:home', permanent=False)),
+    path('healthz', healthz, name='healthz'),
     path('admin/', admin.site.urls),
     path('accounts/', include('allauth.urls')),
     # 동의 화면은 도구함으로 좁힌 뷰가 먼저 잡는다. 나머지 /o/* 는 DOT 그대로.

@@ -28,12 +28,25 @@ def env_list(name, default=''):
 SECRET_KEY = env('DJANGO_SECRET_KEY', required=True)
 DEBUG = env_bool('DJANGO_DEBUG', False)
 ALLOWED_HOSTS = env_list('DJANGO_ALLOWED_HOSTS', 'localhost,127.0.0.1')
-CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS', '')
 
 # 허브 공개 주소 — OAuth 발급자와 보호 리소스 URL 의 뿌리. 바꾸면 모든 커넥터가 재연결된다.
-HUB_BASE_URL = env('HUB_BASE_URL', 'http://127.0.0.1:8000').rstrip('/')
-HUB_MCP_URL = env('HUB_MCP_URL', 'http://127.0.0.1:8080/mcp').rstrip('/')
+HUB_BASE_URL = env('HUB_BASE_URL', 'http://localhost:8000').rstrip('/')
+HUB_MCP_URL = env('HUB_MCP_URL', 'http://localhost:8080/mcp').rstrip('/')
+# 공개 주소가 https 면 쿠키·프록시 헤더도 https 전제. 로컬 compose(http://localhost)는 이 축이 꺼진다.
+HUB_HTTPS = HUB_BASE_URL.startswith('https://')
+CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS', HUB_BASE_URL)
 HUB_SETTINGS_ENCRYPTION_KEY = env('HUB_SETTINGS_ENCRYPTION_KEY', '')
+# MCP 프로세스가 토큰을 검증하러 부르는 introspection 주소. compose 안에서는 공개 주소 대신 서비스 이름(web)으로 간다.
+HUB_INTROSPECTION_URL = env('HUB_INTROSPECTION_URL', f'{HUB_BASE_URL}/o/introspect/')
+
+# --- 사람 → 허브 로그인 수단 ---
+# Google 은 자격이 있을 때만 켜진다. 로컬(compose·개발)은 이메일+비밀번호(HUB_LOCAL_LOGIN, 기본값 = DEBUG).
+GOOGLE_OAUTH_CLIENT_ID = env('GOOGLE_OAUTH_CLIENT_ID', '')
+HUB_LOCAL_LOGIN = env_bool('HUB_LOCAL_LOGIN', DEBUG)
+if not GOOGLE_OAUTH_CLIENT_ID and not HUB_LOCAL_LOGIN:
+    raise RuntimeError(
+        '로그인 수단이 없다 — GOOGLE_OAUTH_CLIENT_ID 를 두거나 HUB_LOCAL_LOGIN=1 로 켜라(.env.example 참고)'
+    )
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -47,7 +60,6 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
-    'allauth.socialaccount.providers.google',
     # Claude → 허브 (인가 서버)
     'oauth2_provider',
     # 판정·궤적
@@ -59,6 +71,8 @@ INSTALLED_APPS = [
     'apps.oauth',
     'apps.trajectory',
 ]
+if GOOGLE_OAUTH_CLIENT_ID:
+    INSTALLED_APPS.append('allauth.socialaccount.providers.google')
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -148,24 +162,28 @@ LOGIN_URL = 'account_login'
 LOGIN_REDIRECT_URL = 'toolbox:home'
 ACCOUNT_LOGOUT_REDIRECT_URL = 'account_login'
 
-# --- 사람 → 허브: Google 로그인만. 제공자는 이후 추가한다. ---
+# --- 사람 → 허브: 운영은 Google, 로컬은 이메일+비밀번호. 제공자는 이후 추가한다. ---
 ACCOUNT_LOGIN_METHODS = {'email'}
-ACCOUNT_SIGNUP_FIELDS = ['email*']
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*'] if HUB_LOCAL_LOGIN else ['email*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'
-SOCIALACCOUNT_ONLY = True
+SOCIALACCOUNT_ONLY = not HUB_LOCAL_LOGIN
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
-SOCIALACCOUNT_PROVIDERS = {
-    'google': {
-        'APP': {
-            'client_id': env('GOOGLE_OAUTH_CLIENT_ID', ''),
-            'secret': env('GOOGLE_OAUTH_CLIENT_SECRET', ''),
-            'key': '',
-        },
-        'SCOPE': ['profile', 'email'],
-        'AUTH_PARAMS': {'access_type': 'online'},
-        'OAUTH_PKCE_ENABLED': True,
+SOCIALACCOUNT_PROVIDERS = (
+    {
+        'google': {
+            'APP': {
+                'client_id': GOOGLE_OAUTH_CLIENT_ID,
+                'secret': env('GOOGLE_OAUTH_CLIENT_SECRET', ''),
+                'key': '',
+            },
+            'SCOPE': ['profile', 'email'],
+            'AUTH_PARAMS': {'access_type': 'online'},
+            'OAUTH_PKCE_ENABLED': True,
+        }
     }
-}
+    if GOOGLE_OAUTH_CLIENT_ID
+    else {}
+)
 
 # --- Claude → 허브: django-oauth-toolkit 3.4 을 MCP 인가 서버로 ---
 OAUTH2_PROVIDER = {
@@ -192,6 +210,9 @@ OAUTH2_PROVIDER = {
     # DCR 은 CIMD 폴백. 연결마다 클라이언트가 쌓이므로 CIMD 가 우선이다.
     'DCR_ENABLED': True,
     'DCR_REGISTRATION_PERMISSION_CLASSES': ('oauth2_provider.dcr.AllowAllDCRPermission',),
+    # RFC 9700: 토큰 원문은 저장하지 않고 체크섬만 둔다. DB·admin 에서 쓸 수 있는 토큰이 보이지 않는다.
+    # introspection·검증은 체크섬으로 찾으므로 동작이 같다. 연결 토큰(apps.toolbox.tokens)도 같은 저장소다.
+    'COMPLIANT_BCP_RFC9700_TOKEN_STORAGE': True,
 }
 
 LOGGING = {
@@ -201,7 +222,7 @@ LOGGING = {
     'root': {'handlers': ['console'], 'level': env('DJANGO_LOG_LEVEL', 'INFO')},
 }
 
-if not DEBUG:
+if HUB_HTTPS:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True

@@ -1,13 +1,6 @@
-import os
+"""공용 픽스처. 환경변수 기본값은 tests/settings.py 가 settings import 전에 박는다."""
 
 import pytest
-from cryptography.fernet import Fernet
-
-os.environ.setdefault('DJANGO_SECRET_KEY', 'test-only')
-os.environ.setdefault('DJANGO_DEBUG', '1')
-os.environ.setdefault('HUB_BASE_URL', 'http://testserver')
-os.environ.setdefault('HUB_MCP_URL', 'http://testserver/mcp')
-os.environ.setdefault('HUB_SETTINGS_ENCRYPTION_KEY', Fernet.generate_key().decode())
 
 
 @pytest.fixture

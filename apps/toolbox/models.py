@@ -51,7 +51,6 @@ class ToolSetting(models.Model):
 
 def granted_scopes(user) -> list[str]:
     """이 사용자의 도구함이 허용하는 스코프. 동의 화면과 토큰 발급이 이 목록을 상한으로 쓴다."""
-    return [
-        e.tool.scope
-        for e in ToolboxEntry.objects.filter(user=user, tool__enabled=True).select_related('tool')
-    ]
+    # 카탈로그 순서로 고정한다 — 담은 순서에 따라 스코프 문자열이 흔들리지 않는다(토큰 스코프·화면 표시가 같은 열).
+    entries = ToolboxEntry.objects.filter(user=user, tool__enabled=True).select_related('tool')
+    return [e.tool.scope for e in entries.order_by('tool__order', 'tool__slug')]

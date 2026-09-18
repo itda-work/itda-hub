@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>연결 토큰</h1>
+<p>이 화면을 떠나면 다시 볼 수 없습니다. 지금 복사하세요. 유효기간 {{ days }}일, 스코프는 도구함을 따라갑니다{% if scopes %}: <code>{{ scopes|join:' ' }}</code>{% else %} (아직 담은 도구가 없어 비어 있습니다){% endif %}.</p>
+<p><code id="token">{{ token }}</code></p>
+
+<h2>Claude Code 에 붙이기</h2>
+<pre>claude mcp add --transport http itda-hub {{ mcp_url }} \
+  --header "Authorization: Bearer {{ token }}"</pre>
+<p>붙인 뒤 대화에서 <code>/mcp</code> 로 연결 상태를 보고, "서울 날씨 알려줘" 처럼 시켜 봅니다.</p>
+
+<h2>다른 MCP 클라이언트</h2>
+<p>Streamable HTTP, 주소 <code>{{ mcp_url }}</code>, 요청 헤더 <code>Authorization: Bearer &lt;토큰&gt;</code>. 예: <code>HUB_TOKEN=&lt;토큰&gt; just smoke</code> 가 목록·날씨·KOSIS 를 한 번씩 부릅니다.</p>
+<p><a href="{% url 'toolbox:home' %}">도구함으로</a></p>
+{% endblock %}

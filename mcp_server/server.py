@@ -38,8 +38,12 @@ def _env(name):
 
 def build() -> FastMCP:
     base_url = _env('HUB_BASE_URL').rstrip('/')
+    # compose 안에서는 공개 주소(localhost)가 자기 자신이라 서비스 이름(web)으로 가야 한다 — HUB_INTROSPECTION_URL.
+    introspection_url = (
+        os.environ.get('HUB_INTROSPECTION_URL', '').strip() or f'{base_url}/o/introspect/'
+    )
     verifier = IntrospectionTokenVerifier(
-        introspection_url=f'{base_url}/o/introspect/',
+        introspection_url=introspection_url,
         client_id=_env('HUB_INTROSPECTION_CLIENT_ID'),
         client_secret=_env('HUB_INTROSPECTION_CLIENT_SECRET'),
         base_url=base_url,

@@ -2,16 +2,19 @@
 
 ## 한 줄
 
-사람은 Google 로 허브에 들어와 **도구함**을 만들고, Claude 는 허브의 OAuth 로 그 사람의 **도구함 스코프**를 받은 토큰을 얻어, 별도 프로세스의 MCP 서버에서 그 스코프만큼의 도구를 본다. 모든 호출은 django-itda 궤적으로 남는다.
+사람은 허브에 로그인해 **도구함**을 만들고, 클라이언트는 그 사람의 **도구함 스코프**가 실린 토큰(OAuth 동의 또는 연결 토큰)으로 별도 프로세스의 MCP 서버에 붙어 그 스코프만큼의 도구를 본다. 모든 호출은 django-itda 궤적으로 남는다.
 
-## 두 겹의 OAuth
+## 두 겹의 OAuth, 그리고 연결 토큰
 
 | 겹 | 누가 누구에게 | 구현 |
 |---|---|---|
-| 사람 → 허브 | 교육생이 Google 계정으로 로그인 | django-allauth Google. 이후 제공자 추가 |
-| Claude → 허브 | 커스텀 커넥터가 허브 인가 서버에서 사용자 동의를 받는다. 동의 화면의 스코프 = 도구함 | django-oauth-toolkit 3.4 (PKCE S256 · CIMD · DCR · RFC 8414/9728) |
+| 사람 → 허브 | 운영: 교육생이 Google 계정으로 로그인. 로컬·자체 호스팅: 이메일+비밀번호(`HUB_LOCAL_LOGIN`) | django-allauth. Google 은 자격이 있을 때만 설치된다 |
+| Claude → 허브 (OAuth) | 커스텀 커넥터가 허브 인가 서버에서 사용자 동의를 받는다. 동의 화면의 스코프 = 도구함 | django-oauth-toolkit 3.4 (PKCE S256 · CIMD · DCR · RFC 8414/9728) |
+| 클라이언트 → 허브 (연결 토큰) | Claude Code 등 헤더를 보낼 수 있는 클라이언트는 도구함 화면에서 발급한 토큰을 `Authorization: Bearer` 로 보낸다 | `apps/toolbox/tokens.py` — DOT `AccessToken` 그대로(별도 모델 없음). 30일 · 사용자당 하나 · 스코프는 도구함을 따라간다 |
 
-fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Google 에 직접 로그인하면 도구함 스코프를 실을 자리가 없다. 신원은 Google 에서 받고 토큰은 허브가 발급한다.
+fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Google 에 직접 로그인하면 도구함 스코프를 실을 자리가 없다. 신원은 로그인 제공자에서 받고 토큰은 허브가 발급한다.
+
+연결 토큰이 OAuth 토큰과 같은 표에 사는 이유: MCP 서버의 검증 경로(introspection → `username` → actor, 스코프 → 도구 목록)가 하나여야 한다. 발급 경로만 다르다 — 동의 화면 대신 버튼(`issue_token` 커맨드도 같은 함수). 토큰 원문은 저장하지 않고 체크섬만 둔다(`COMPLIANT_BCP_RFC9700_TOKEN_STORAGE`) — DB·admin 어디에도 쓸 수 있는 토큰이 없다. claude.ai·Cowork 의 커스텀 커넥터는 헤더를 받지 않으므로(OAuth 또는 무인증) 그쪽은 OAuth 만이 길이다.
 
 ## 스코프 = 도구함
 
@@ -23,14 +26,15 @@ fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Goog
 ## 프로세스 경계
 
 ```
-브라우저 ──Google──▶ Django(web)   /  /o/*  /.well-known/*  /toolbox  /trajectory  /admin
-Claude ───OAuth────▶ Django(web)   동의 화면 · 토큰 · introspection
-Claude ───MCP─────▶ mcp_server    /mcp  (fastmcp · Streamable HTTP · introspection 으로 토큰 검증)
-                       │ ORM(같은 DB)
+브라우저 ──로그인──▶ Django(web)   /  /o/*  /.well-known/*  /toolbox(연결 토큰)  /trajectory  /admin  /healthz
+Claude ────OAuth───▶ Django(web)   동의 화면 · 토큰 · introspection
+Claude ────MCP────▶ mcp_server    /mcp  (fastmcp · Streamable HTTP · introspection 으로 토큰 검증)
+Claude Code ─Bearer▶ mcp_server    같은 /mcp — 연결 토큰도 같은 introspection 을 지난다
+                       │ ORM(같은 SQLite, WAL)
                        └── 도구함·설정 읽기 · 궤적(ToolCall) 쓰기 · 도구 어댑터(HTTPS GET)
 ```
 
-Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). 리버스 프록시가 `/mcp` 는 MCP 프로세스로, 나머지는 Django 로 보낸다.
+Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에서는 web·mcp 가 볼륨 하나를 공유하고, mcp 는 introspection 을 서비스 이름(`HUB_INTROSPECTION_URL=http://web:8000/o/introspect/`)으로 부른다. 운영은 리버스 프록시가 `/mcp` 는 MCP 프로세스로, 나머지는 Django 로 보낸다.
 
 ## 메타데이터 발견
 
@@ -54,3 +58,4 @@ Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). 리버스 �
 | 스코프 ↔ 권한 매핑 | 카탈로그 slug 규약 |
 | 설정 저장소 | `apps/toolbox` |
 | HTTP 브리지 예제 | `mcp_server/__main__.py` |
+| 본문이 올린 `ToolDenied` 의 궤적 분류(exception → forbidden) | 허브는 손대지 않는다 — [django-itda#6](https://github.com/itda-work/django-itda/issues/6) 로 넘겼다. 그때까지 궤적 화면에는 `exception · ToolDenied: …` 로 보인다 |
