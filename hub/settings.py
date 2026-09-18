@@ -98,7 +98,20 @@ def _database(url: str) -> dict:
     if url.startswith('sqlite:///'):
         path = url[len('sqlite:///') :]
         name = path if path.startswith('/') else str(BASE_DIR / path)
-        return {'ENGINE': 'django.db.backends.sqlite3', 'NAME': name, 'OPTIONS': {'timeout': 20}}
+        return {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': name,
+            'OPTIONS': {
+                # WAL: 읽기와 쓰기가 서로 막지 않는다. web 과 mcp 두 프로세스가 같은 파일을 쓰므로 기본값이다.
+                # journal_mode 는 파일에 영속되지만 연결마다 다시 걸어도 무해하다. 로컬 파일시스템 전제(NFS 금지).
+                'init_command': (
+                    'PRAGMA journal_mode=WAL;PRAGMA synchronous=NORMAL;PRAGMA temp_store=MEMORY;'
+                ),
+                # 쓰기 트랜잭션을 시작부터 잠가 "database is locked" 를 timeout(=sqlite busy_timeout, 20초) 안에서 해소한다(Django 5.1+).
+                'transaction_mode': 'IMMEDIATE',
+                'timeout': 20,
+            },
+        }
     raise RuntimeError(f'지원하지 않는 DATABASE_URL: {url!r} — v1 은 sqlite 만 받는다')
 
 
