@@ -16,7 +16,7 @@ PlayMCP 의 소비자 쪽 모양을 Django 로 세운 것이다. 세 층이 있�
 | 층 | 무엇 | 어디에 |
 |---|---|---|
 | 사람 → 허브 | 로그인해 카탈로그에서 도구를 도구함에 담고, 도구별 설정(내 API 키 또는 관리자 공용 키)을 둔다. 운영은 Google 로그인, 로컬·자체 호스팅은 이메일+비밀번호 | Django 웹 (`hub/`, `apps/`) |
-| 클라이언트 → 허브 | ① 커스텀 커넥터(claude.ai·Cowork)는 허브의 OAuth 인가 서버(django-oauth-toolkit 3.4, PKCE·CIMD·DCR)로 사용자 동의를 받는다 — **동의 화면의 스코프가 곧 도구함**. ② Claude Code 등은 도구함 화면에서 발급한 **연결 토큰**을 Bearer 로 보낸다 — 스코프는 도구함을 따라간다 | `apps/oauth`, `apps/toolbox/tokens.py` |
+| 클라이언트 → 허브 | ① 커스텀 커넥터(claude.ai·Cowork)는 허브의 OAuth 인가 서버(django-oauth-toolkit 3.4, PKCE·CIMD·DCR)로 사용자 동의를 받는다 — **동의 화면의 스코프가 곧 도구함**. ② 운영·스모크용 **연결 토큰**(`issue_token` 커맨드만 발급, 화면에는 없다)을 Bearer 로 보낸다 — 스코프는 도구함을 따라간다 | `apps/oauth`, `apps/toolbox/tokens.py` |
 | 도구 실행 | 별도 프로세스의 MCP 서버(fastmcp 4, Streamable HTTP)가 토큰을 introspection 으로 검증하고, 토큰의 스코프대로 도구 목록을 거른 뒤, 사용자의 설정으로 도구를 부른다. 모든 호출은 궤적으로 남는다 | `mcp_server/` |
 
 두 연결 방식의 토큰은 같은 저장소(DOT `AccessToken`, 원문은 저장하지 않고 체크섬만)에 있고 MCP 서버는 둘을 구분하지 않는다. Django 안에 MCP 를 호스팅하지 않는다 — django-itda 의 결정을 따른다("LLM 은 월드 서버의 클라이언트").
@@ -30,7 +30,7 @@ PlayMCP 의 소비자 쪽 모양을 Django 로 세운 것이다. 세 층이 있�
 | ![로그인](docs/reports/screens/login-light.png) | ![도구함](docs/reports/screens/toolbox-light.png) | ![궤적](docs/reports/screens/trajectory-light.png) | ![동의](docs/reports/screens/consent-light.png) |
 
 - **로그인** — Google 이 켜져 있으면 「Google 로 계속하기」가 1차 액션이고, 이메일+비밀번호는 접힌 2차(기존 계정·비상용 관리자)다. Google 이 없으면(로컬·자체 호스팅) 이메일+비밀번호 폼과 가입 안내가 바로 보인다.
-- **도구함** — 도구 카드(이름·출처·설명·스코프·자격증명, 담기/빼기, 설정)와 연결 카드(연결 토큰 상태·발급/재발급/폐기, MCP 주소). 발급한 토큰은 다음 화면에서 **한 번만** 보이고 복사 버튼과 Claude Code 연결 명령 예시가 붙는다.
+- **도구함** — 도구 카드(아이콘·이름·설명·출처·스코프, 오른쪽 `+` 담기 / `✓` 담김 토글, 설정 — 자격증명이 필요한 도구는 설정을 저장해야 담긴다)와 연결 카드(claude.ai·Cowork 커스텀 커넥터 안내 · MCP 주소 복사). 화면에는 OAuth 커넥터만 노출한다 — 연결 토큰은 `issue_token` 커맨드 전용.
 - **궤적** — 시각·도구·판정·소요·결과·사유·경로. 판정은 필드(`ALLOW`/`DENY`/…) 그대로 배지로 낸다.
 - **연결 동의** — 앱 이름과 허용할 도구(= 내 도구함)를 보여 주고 허용/거부를 고른다.
 
@@ -46,8 +46,8 @@ just up      # hub-web :8000 · hub-mcp :8080 (127.0.0.1 에만). 포트가 겹�
 ```
 
 1. `http://localhost:8000` 에 `.env` 의 `HUB_ADMIN_EMAIL` / `HUB_ADMIN_PASSWORD` 로 로그인한다(Google 자격이 없으면 이메일+비밀번호 회원가입도 열려 있다).
-2. 도구함에서 「날씨」를 담고 「연결 토큰 발급」을 누른다. 토큰은 그 화면에서 한 번만 보인다.
-3. Claude Code 에 붙인다: `claude mcp add --transport http itda-hub http://localhost:8080/mcp --header "Authorization: Bearer <토큰>"` — 대화에서 "서울 날씨 알려줘".
+2. 도구함에서 「날씨」를 담는다(`+`).
+3. 연결 토큰을 받아(`just token admin@example.com`) Claude Code 에 붙인다: `claude mcp add --transport http itda-hub http://localhost:8080/mcp --header "Authorization: Bearer <토큰>"` — 대화에서 "서울 날씨 알려줘". 로컬은 HTTPS 가 아니라 커스텀 커넥터(OAuth) 대신 이 길로 잰다.
 4. 「궤적」에서 방금 호출이 남은 것을 본다. 「날씨」를 빼면 다음 `tools/list` 부터 사라진다.
 
 명령줄로만 하려면: `just token admin@example.com --tools weather,kosis --shared` 가 도구함을 채우고 토큰을 찍는다. `HUB_TOKEN=<토큰> just smoke` 가 진짜 MCP 클라이언트(fastmcp)로 목록·날씨·KOSIS 를 한 번씩 부른다(토큰 없이는 거부되는 것까지 잰다).
@@ -72,7 +72,7 @@ just check               # ruff · manage.py check --fail-level WARNING · 마�
 - 로그인: Google(django-allauth, 자격이 있을 때만 켜짐) · 이메일+비밀번호(`HUB_LOCAL_LOGIN`, 로컬 기본값). Google 이 켜지면 새 계정은 Google 로만 — 비밀번호는 기존 계정(비상용 관리자)의 로그인만.
 - 카탈로그 4종: KOSIS 통계 검색, 날씨(공개), 환율·유가(어댑터 준비 중 — 비공개). 전부 HTTPS GET, 읽기 전용.
 - 도구함, 도구별 설정(암호화 저장), 관리자 공용 키.
-- 연결 방식 둘: OAuth 인가 서버(CIMD 우선, DCR 병행, PKCE S256 · RFC 9700 — implicit·password·plain 거부, RFC 9207 `iss`, refresh 재사용 탐지, 운영은 https 콜백만) · 연결 토큰(도구함 화면, 30일, 사용자당 하나).
+- 연결 방식 둘: OAuth 인가 서버(CIMD 우선, DCR 병행, PKCE S256 · RFC 9700 — implicit·password·plain 거부, RFC 9207 `iss`, refresh 재사용 탐지, 운영은 https 콜백만) · 연결 토큰(`issue_token` 커맨드 전용 — 화면 없음, 30일, 사용자당 하나).
 - 요청 단위 도구 목록 필터(스코프), 궤적 화면, 관리자 열람.
 - 배포: docker compose(hub-web + hub-mcp, SQLite WAL 공유) — 운영은 `compose.prod.yml` 을 얹고 리버스 프록시만 앞에 둔다.
 

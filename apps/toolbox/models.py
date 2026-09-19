@@ -2,6 +2,10 @@
 
 `ToolboxEntry` 가 있는 도구만 그 사용자의 동의 화면에 스코프로 나타나고, 그래서 토큰에 실리고,
 그래서 MCP 도구 목록에 나타난다. `ToolSetting` 은 값을 암호화해 둔다.
+
+불변식: 자격증명이 필요한 도구의 `ToolboxEntry` 는 설정을 마친 뒤에만 생긴다(`is_configured`).
+담긴 도구는 곧 호출할 수 있는 도구다 — 스코프에 실렸는데 호출하면 "자격증명이 없다" 로 거부되는
+도구를 만들지 않는다.
 """
 
 from django.conf import settings
@@ -28,6 +32,10 @@ class ToolboxEntry(models.Model):
     def __str__(self):
         return f'{self.user} · {self.tool.slug}'
 
+    def stored_value(self) -> bool:
+        setting = getattr(self, 'setting', None)
+        return setting is not None and bool(setting.ciphertext)
+
 
 class ToolSetting(models.Model):
     entry = models.OneToOneField(ToolboxEntry, on_delete=models.CASCADE, related_name='setting')
@@ -47,6 +55,16 @@ class ToolSetting(models.Model):
 
     def get_value(self) -> str:
         return crypto.decrypt(self.ciphertext)
+
+
+def is_configured(tool: Tool, *, has_value: bool, use_shared: bool) -> bool:
+    """이 도구를 지금 호출할 수 있는가 — 자격증명 불요, 사용자 키 있음, 또는 공용 키를 켰고 실제로 있음.
+
+    MCP 서버의 자격증명 해석(`mcp_server/tools/credentials.py`)과 같은 규칙이다. 담기의 관문이다.
+    """
+    if not tool.needs_setting or has_value:
+        return True
+    return use_shared and tool.credential == Tool.Credential.SHARED and bool(tool.shared_value())
 
 
 def granted_scopes(user) -> list[str]:

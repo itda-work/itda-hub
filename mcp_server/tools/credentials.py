@@ -1,7 +1,5 @@
 """자격증명 해석 — 도구함 설정(암호화) → 관리자 공용 키 순. 값은 반환값으로만 흐르고 로그에 남기지 않는다."""
 
-import os
-
 from django_itda.results import ToolDenied
 
 from apps.toolbox.models import ToolboxEntry
@@ -15,7 +13,7 @@ def resolve(actor, slug):
     if setting is not None and setting.ciphertext:
         return setting.get_value()
     if entry.use_shared_credential:
-        shared = os.environ.get(f'SHARED_{entry.tool.setting_key}', '')
+        shared = entry.tool.shared_value()
         if shared:
             return shared
         raise ToolDenied.forbidden(f'{slug} 의 관리자 공용 키가 설정돼 있지 않다')

@@ -74,21 +74,6 @@ def test_틀린_리소스_서버_자격은_introspection_을_못_한다(client, 
     assert response.status_code in (401, 403), response.status_code
 
 
-def test_화면_발급은_한_번만_보여준다(client, user, catalog):
-    client.force_login(user)
-    redirect = client.post('/toolbox/token/issue/')
-    assert redirect.status_code == 302 and redirect['Location'].endswith('/toolbox/token/')
-    page = client.get('/toolbox/token/')
-    assert page.status_code == 200
-    raw = page.context['token']
-    assert raw in page.content.decode() and 'claude mcp add' in page.content.decode()
-    again = client.get('/toolbox/token/')
-    assert again.status_code == 302, '두 번째 열람은 도구함으로 돌려보낸다'
-    home = client.get('/toolbox/')
-    assert raw not in home.content.decode(), '도구함 화면에 원문이 남지 않는다'
-    assert '재발급' in home.content.decode()
-
-
 def test_issue_token_커맨드는_도구함을_채우고_원문만_stdout_에_찍는다(
     user, catalog, capsys, monkeypatch
 ):

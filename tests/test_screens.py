@@ -77,8 +77,12 @@ def test_도구함_화면_카드와_연결_카드(client, user, catalog):
     for tool in Tool.objects.filter(enabled=True):
         assert tool.name in html and tool.scope in html
     assert 'action="/toolbox/remove/kosis/"' in html and 'href="/toolbox/setting/kosis/"' in html
-    assert 'action="/toolbox/add/weather/"' in html
-    assert 'action="/toolbox/token/issue/"' in html and '연결 토큰 발급' in html
+    assert 'aria-label="KOSIS 국가통계 담김 — 빼기"' in html and 'tool-toggle-on' in html
+    assert 'action="/toolbox/add/weather/"' in html and 'aria-label="날씨 담기"' in html
+    assert 'id="mcp-url"' in html and 'data-copy-target="mcp-url"' in html
+    assert '연결 토큰' not in html and '/toolbox/token/' not in html, (
+        '연결 토큰은 화면에 내지 않는다'
+    )
     assert '관리자</a>' not in html, '관리자 링크는 스태프에게만'
 
 
@@ -89,8 +93,9 @@ def test_스태프는_관리자_링크를_본다(client, user, catalog):
     assert 'href="/admin/"' in _html(client.get('/toolbox/'))
 
 
-def test_도구_설정_화면_라벨(client, user, catalog):
-    ToolboxEntry.objects.create(user=user, tool=catalog['kosis'])
+def test_도구_설정_화면_라벨(client, user, catalog, monkeypatch):
+    monkeypatch.setenv('SHARED_KOSIS_API_KEY', 'shared')
+    ToolboxEntry.objects.create(user=user, tool=catalog['kosis'], use_shared_credential=True)
     client.force_login(user)
     html = _html(client.get('/toolbox/setting/kosis/'))
     assert 'for="id_value"' in html and 'id="id_value"' in html and 'name="value"' in html
@@ -98,16 +103,10 @@ def test_도구_설정_화면_라벨(client, user, catalog):
         assert 'for="id_use_shared"' in html and 'name="use_shared"' in html
 
 
-def test_연결_토큰_화면_복사_버튼과_명령_예시(client, user, catalog):
-    ToolboxEntry.objects.create(user=user, tool=catalog['weather'])
+def test_연결_토큰_화면은_없다(client, user, catalog):
     client.force_login(user)
-    client.post('/toolbox/token/issue/')
-    html = _html(client.get('/toolbox/token/'))
-    raw = re.search(r'<code id="token"[^>]*>([^<]+)</code>', html).group(1)
-    assert raw and html.count(raw) == 2, '토큰 칸과 Claude Code 명령 예시에만'
-    assert 'data-copy-target="token"' in html and 'data-copy-target="cc-command"' in html
-    assert 'claude mcp add --transport http itda-hub http://testserver/mcp' in html
-    assert '/static/js/hub.js' in html
+    for url in ('/toolbox/token/', '/toolbox/token/issue/', '/toolbox/token/revoke/'):
+        assert client.post(url).status_code == 404, url
 
 
 def test_궤적_빈_상태와_표(client, user, catalog):

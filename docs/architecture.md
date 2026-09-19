@@ -10,11 +10,11 @@
 |---|---|---|
 | 사람 → 허브 | 운영: 교육생이 Google 계정으로 로그인. 로컬·자체 호스팅: 이메일+비밀번호(`HUB_LOCAL_LOGIN`) | django-allauth. Google 은 자격이 있을 때만 설치된다 |
 | Claude → 허브 (OAuth) | 커스텀 커넥터가 허브 인가 서버에서 사용자 동의를 받는다. 동의 화면의 스코프 = 도구함 | django-oauth-toolkit 3.4 (PKCE S256 · CIMD · DCR · RFC 8414/9728 · RFC 9700/9207) |
-| 클라이언트 → 허브 (연결 토큰) | Claude Code 등 헤더를 보낼 수 있는 클라이언트는 도구함 화면에서 발급한 토큰을 `Authorization: Bearer` 로 보낸다 | `apps/toolbox/tokens.py` — DOT `AccessToken` 그대로(별도 모델 없음). 30일 · 사용자당 하나 · 스코프는 도구함을 따라간다 |
+| 클라이언트 → 허브 (연결 토큰) | 운영·스모크용. 헤더를 보낼 수 있는 클라이언트가 `issue_token` 커맨드로 발급한 토큰을 `Authorization: Bearer` 로 보낸다 | `apps/toolbox/tokens.py` — DOT `AccessToken` 그대로(별도 모델 없음). 30일 · 사용자당 하나 · 스코프는 도구함을 따라간다 |
 
 fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Google 에 직접 로그인하면 도구함 스코프를 실을 자리가 없다. 신원은 로그인 제공자에서 받고 토큰은 허브가 발급한다.
 
-연결 토큰이 OAuth 토큰과 같은 표에 사는 이유: MCP 서버의 검증 경로(introspection → `username` → actor, 스코프 → 도구 목록)가 하나여야 한다. 발급 경로만 다르다 — 동의 화면 대신 버튼(`issue_token` 커맨드도 같은 함수). 토큰 원문은 저장하지 않고 체크섬만 둔다(`COMPLIANT_BCP_RFC9700_TOKEN_STORAGE`) — DB·admin 어디에도 쓸 수 있는 토큰이 없다. claude.ai·Cowork 의 커스텀 커넥터는 헤더를 받지 않으므로(OAuth 또는 무인증) 그쪽은 OAuth 만이 길이다.
+연결 토큰이 OAuth 토큰과 같은 표에 사는 이유: MCP 서버의 검증 경로(introspection → `username` → actor, 스코프 → 도구 목록)가 하나여야 한다. 발급 경로만 다르다 — 동의 화면 대신 `issue_token` 커맨드(0.4.0 부터 화면 버튼은 없다 — 사용자에게는 OAuth 커넥터만 노출). 토큰 원문은 저장하지 않고 체크섬만 둔다(`COMPLIANT_BCP_RFC9700_TOKEN_STORAGE`) — DB·admin 어디에도 쓸 수 있는 토큰이 없다. claude.ai·Cowork 의 커스텀 커넥터는 헤더를 받지 않으므로(OAuth 또는 무인증) 그쪽은 OAuth 만이 길이다.
 
 ## 스코프 = 도구함
 
@@ -26,7 +26,7 @@ fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Goog
 ## 프로세스 경계
 
 ```
-브라우저 ──로그인──▶ Django(web)   /  /o/*  /.well-known/*  /toolbox(연결 토큰)  /trajectory  /admin  /healthz
+브라우저 ──로그인──▶ Django(web)   /  /o/*  /.well-known/*  /toolbox(도구함·설정)  /trajectory  /admin  /healthz
 Claude ────OAuth───▶ Django(web)   동의 화면 · 토큰 · introspection
 Claude ────MCP────▶ mcp_server    /mcp  (fastmcp · Streamable HTTP · introspection 으로 토큰 검증)
 Claude Code ─Bearer▶ mcp_server    같은 /mcp — 연결 토큰도 같은 introspection 을 지난다

@@ -8,7 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 
 from apps.catalog.models import Tool
 from apps.toolbox import tokens
-from apps.toolbox.models import ToolboxEntry
+from apps.toolbox.models import ToolboxEntry, is_configured
 
 
 class Command(BaseCommand):
@@ -29,8 +29,15 @@ class Command(BaseCommand):
             tool = Tool.objects.filter(slug=slug, enabled=True).first()
             if tool is None:
                 raise CommandError(f'공개된 도구가 아니다: {slug}')
-            entry, _ = ToolboxEntry.objects.get_or_create(user=user, tool=tool)
-            if options['shared'] and tool.credential == Tool.Credential.SHARED:
+            use_shared = options['shared'] and tool.credential == Tool.Credential.SHARED
+            entry = ToolboxEntry.objects.filter(user=user, tool=tool).first()
+            if entry is None and not is_configured(tool, has_value=False, use_shared=use_shared):
+                raise CommandError(
+                    f'{slug} 는 설정이 필요하다 — --shared(관리자 공용 키가 있을 때) 또는 허브 화면에서 키를 넣어 담아라'
+                )
+            if entry is None:
+                entry = ToolboxEntry.objects.create(user=user, tool=tool)
+            if use_shared:
                 entry.use_shared_credential = True
                 entry.save(update_fields=['use_shared_credential'])
             self.stderr.write(

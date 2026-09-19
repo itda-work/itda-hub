@@ -103,6 +103,17 @@
     @apply mb-0;
   }
 
+  /* ── 도구 카드: 아이콘 타일 · 담기(+)/담김(✓) 토글 ─────────── */
+  .tool-icon {
+    @apply flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-gray-200 dark:border-slate-600 bg-gray-50 dark:bg-slate-900 text-lg font-bold text-blue-700 dark:text-blue-300;
+  }
+  .tool-toggle {
+    @apply inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 transition-colors hover:bg-gray-50 dark:hover:bg-slate-700 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500/60;
+  }
+  .tool-toggle-on {
+    @apply border-emerald-300 dark:border-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/60;
+  }
+
   /* ── 배지(판정·상태) ─────────────────────────────────────────── */
   .badge {
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap;

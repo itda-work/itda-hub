@@ -5,6 +5,8 @@
 한 번만 정의한다.
 """
 
+import os
+
 from django.db import models
 
 
@@ -42,6 +44,17 @@ class Tool(models.Model):
     @property
     def scope(self):
         return f'tool:{self.slug}'
+
+    @property
+    def needs_setting(self):
+        """자격증명이 필요한 도구 — 설정을 마치기 전에는 도구함에 담기지 않는다."""
+        return self.credential != self.Credential.NONE
+
+    def shared_value(self) -> str:
+        """관리자 공용 키(`SHARED_<설정 키>` 환경변수). 공용 키를 받지 않는 도구거나 비어 있으면 ''."""
+        if self.credential != self.Credential.SHARED or not self.setting_key:
+            return ''
+        return os.environ.get(f'SHARED_{self.setting_key}', '')
 
 
 def scope_choices():
