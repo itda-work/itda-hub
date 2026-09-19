@@ -464,7 +464,7 @@ socialaccount = [
 [[package]]
 name = "django-itda"
 version = "0.2.0"
-source = { git = "https://github.com/itda-work/django-itda?rev=main#142bb6b263325d173dbccd843a930083d8c66fbb" }
+source = { git = "https://github.com/itda-work/django-itda?rev=main#8eb566a8e0d6fd342d17c9e08afb2529e884769b" }
 dependencies = [
     { name = "django" },
 ]
