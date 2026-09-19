@@ -2,6 +2,27 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 를 따른다. 과업별 근거·검증은 `docs/reports/` 에 있다.
 
+## [0.3.1] — 2026-09-20
+
+claude.ai 커스텀 커넥터가 연결되지 않던 문제의 핫픽스. 근거: [docs/reports/H-5.md](docs/reports/H-5.md).
+
+### 수정
+
+- **CIMD grant 해석 완화.** claude.ai 의 클라이언트 메타데이터 문서에 `urn:ietf:params:oauth:grant-type:jwt-bearer` 가
+  더해져 DOT 3.4.1 이 「non-refresh grant 가 정확히 하나」 규칙으로 해석을 거부했다(인가 요청이 모르는 클라이언트로
+  떨어짐). 허브가 기동 시 `oauth2_provider.cimd._resolve_grant_type` 을 감싸, 서버가 지원하지 않는 grant 는 무시하고
+  **지원 grant 가 정확히 하나**일 때만 통과시킨다(`apps/oauth/cimd.py`). 지원 grant 가 0개·2개면 여전히 거부.
+  기동 시 claude.ai 표본으로 적용을 자체 검사하고, 실패하면 경고 로그를 남긴다(DOT 를 올릴 때 신호).
+- **인가 오류가 「도구함이 비어 있습니다」 로 보이던 오표시.** `ToolboxAuthorizationView.get` 이 DOT 오류 화면(`error`
+  컨텍스트, `scopes` 없음)까지 빈 도구함으로 바꾸고 있었다. 이제 오류는 오류 화면으로, **검증 성공 + 도구함과의
+  교집합 없음**일 때만 빈 도구함 화면을 낸다. CIMD URL 클라이언트를 확인하지 못한 경우 「클라이언트 등록(CIMD) 실패」
+  와 재시도 안내를 보여 준다.
+
+### 변경
+
+- CIMD 해석 실패 메시지에 문서의 `grant_types` 전체와 지원 목록이 실린다(기존 로그의 client_id URL 과 함께). 무시한
+  grant 는 INFO 로그로 남는다.
+
 ## [0.3.0] — 2026-09-20
 
 화면을 스킬.잇다(`itda.work`)와 한 브랜드로. 기능·모델·URL·OAuth 흐름·폼 필드 이름은 그대로다. 근거: [docs/reports/H-4.md](docs/reports/H-4.md).

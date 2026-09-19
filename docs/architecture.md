@@ -42,6 +42,7 @@ Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에
 - 보호 리소스 메타데이터: `GET /.well-known/oauth-protected-resource/mcp` (Django, DOT 경로 형식). `resource` = `HUB_MCP_URL`, `authorization_servers` = `[HUB_BASE_URL]`.
 - MCP 서버는 401 에 `WWW-Authenticate: Bearer resource_metadata=...` 를 실어 위 문서를 가리킨다.
 - Claude 의 클라이언트 신원은 CIMD(공개 신원) 우선, DCR 병행. 콜백 `https://claude.ai/api/mcp/auth_callback`.
+  CIMD 문서의 `grant_types` 중 허브가 지원하지 않는 것(예: `jwt-bearer`)은 무시하고 지원 grant 가 정확히 하나일 때만 받는다 — DOT 규칙을 기동 시 감싼다(`apps/oauth/cimd.py`, H-5).
 
 ## 자격증명
 

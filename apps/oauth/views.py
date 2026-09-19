@@ -10,9 +10,12 @@ Claude 는 메타데이터에 광고된 카탈로그 전체 스코프를 요청�
 """
 
 from django.shortcuts import render
+from oauth2_provider.cimd import is_cimd_client_id
 from oauth2_provider.exceptions import OAuthToolkitError
+from oauth2_provider.settings import oauth2_settings
 from oauth2_provider.views import AuthorizationView
 from oauthlib.oauth2 import AccessDeniedError
+from oauthlib.oauth2.rfc6749.errors import InvalidClientIdError
 
 from apps.toolbox.models import granted_scopes
 
@@ -28,9 +31,23 @@ class ToolboxAuthorizationView(AuthorizationView):
 
     def get(self, request, *args, **kwargs):
         response = super().get(request, *args, **kwargs)
-        if getattr(response, 'context_data', None) is not None and not response.context_data.get(
-            'scopes'
-        ):
+        context = getattr(response, 'context_data', None)
+        if context is None:
+            return response  # 리디렉트(오류 콜백·자동 승인)
+        if context.get('error'):
+            # 검증 실패 — DOT 오류 화면. 「빈 도구함」 으로 바꾸면 원인이 가려진다.
+            # CIMD 해석이 실패하면 DOT 는 클라이언트를 모르는 것으로 본다(InvalidClientIdError). 원인은 서버 로그에만 있다.
+            client_id = request.GET.get('client_id', '')
+            if (
+                isinstance(context['error'], InvalidClientIdError)
+                and oauth2_settings.CIMD_ENABLED
+                and is_cimd_client_id(client_id)
+            ):
+                context['cimd_client_id'] = client_id
+                context['cimd_retry_seconds'] = oauth2_settings.CIMD_FAILURE_BACKOFF_SECONDS
+            return response
+        if not context.get('scopes'):
+            # 검증은 통과했고 요청 스코프와 도구함의 교집합이 비었다.
             return render(request, 'oauth/empty_toolbox.html', status=200)
         return response
 

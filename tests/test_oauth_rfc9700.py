@@ -2,7 +2,7 @@
 나머지(plain · implicit · password · 쿼리스트링 토큰 · refresh 재사용)는 닫혀 있다.
 
 claude.ai·Cowork 커스텀 커넥터의 신원(CIMD 문서, 2026-09-20 실측)은 grant_types = authorization_code ·
-refresh_token, response_types = code, token_endpoint_auth_method = none, 콜백 https — 여기서 닫는 것과 겹치지 않는다.
+refresh_token · jwt-bearer(허브는 무시 — tests/test_oauth_cimd.py), response_types = code, token_endpoint_auth_method = none, 콜백 https — 여기서 닫는 것과 겹치지 않는다.
 """
 
 import base64

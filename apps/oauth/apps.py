@@ -5,3 +5,8 @@ class OAuthConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
     name = 'apps.oauth'
     verbose_name = '인가 서버'
+
+    def ready(self):
+        from apps.oauth import cimd
+
+        cimd.install()

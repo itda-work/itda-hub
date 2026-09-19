@@ -31,10 +31,16 @@
       <button type="submit" name="allow" value="Authorize" class="btn btn-primary btn-lg">허용</button>
     </div>
   </form>
+{% elif cimd_client_id %}
+  <h1 class="text-xl font-bold">연결할 수 없습니다</h1>
+  <p class="mt-3 text-sm text-gray-700 dark:text-slate-300">클라이언트 등록(CIMD) 실패: 연결을 요청한 앱의 등록 정보(<code class="code-inline break-all">{{ cimd_client_id }}</code>)를 받아오지 못했거나, 허브가 받아들일 수 없는 내용이었습니다.</p>
+  <p class="mt-2 text-sm text-gray-700 dark:text-slate-300">잠시 뒤({{ cimd_retry_seconds }}초 이상) Claude 에서 연결을 다시 시도하세요. 계속 실패하면 허브 운영자에게 알려 주세요 — 원인은 서버 로그에 남아 있습니다.</p>
+  <p class="mt-4 text-xs muted"><code class="code-inline">{{ error.error }}</code> {{ error.description }}</p>
 {% else %}
   <h1 class="text-xl font-bold">연결할 수 없습니다</h1>
   <p class="mt-3 text-sm"><code class="code-inline">{{ error.error }}</code></p>
   <p class="mt-2 text-sm text-gray-700 dark:text-slate-300">{{ error.description }}</p>
+  <p class="mt-4 text-xs muted">연결 요청이 올바르지 않습니다. Claude 에서 연결을 처음부터 다시 시도하세요.</p>
 {% endif %}
 </div>
 {% endblock %}
