@@ -4,7 +4,7 @@
 
 - 응답·문서·주석·커밋 메시지는 한국어. 툴 파라미터의 한글은 리터럴 UTF-8(`\uXXXX` 금지).
 - 프로젝트 지식은 저장소 안에 자족적으로. 개인 메모리 의존 0.
-- 스택: Python 3.12+ · uv · Django 5.2 LTS · django-itda · django-allauth · django-oauth-toolkit 3.4 · fastmcp 4 · pytest-django · ruff.
+- 스택: Python 3.14 · uv · Django 6.1 · django-itda 0.4(태그 고정) · django-allauth · django-oauth-toolkit 3.4 · fastmcp 4 · pytest-django · ruff.
 - **판정·궤적·승인 핸들·도구 선언은 `django_itda` 것을 쓴다.** 허브에서 범용으로 드러난 조각은 허브에 두지 않고 django-itda 로 PR 한다.
 - **Django 안에 MCP 를 호스팅하지 않는다.** `mcp_server/` 는 별도 프로세스이고 토큰 검증은 introspection 이다.
 - **연결 토큰은 DOT `AccessToken` 을 그대로 쓴다**(`apps/toolbox/tokens.py`). 별도 토큰 모델·별도 검증 경로를 만들지 않는다 — MCP 서버가 OAuth 토큰과 연결 토큰을 구분하지 않는 것이 계약이다. 원문은 체크섬만 저장(RFC 9700).

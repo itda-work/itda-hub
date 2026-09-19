@@ -42,7 +42,7 @@ smoke:
 check:
     uv run ruff check .
     uv run ruff format --check .
-    uv run python manage.py check
+    uv run python manage.py check --fail-level WARNING
     uv run python manage.py makemigrations --check --dry-run
     uv run pytest -q
 

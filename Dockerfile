@@ -1,14 +1,19 @@
 # 잇다 허브 — web(gunicorn)·mcp(python -m mcp_server) 가 같은 이미지를 쓴다. 역할은 compose 의 command 가 정한다.
-FROM python:3.12-slim AS builder
+# 파이썬은 패치까지 고정한다(재현성). 올릴 때는 `.python-version`·pyproject 의 requires-python 과 같이 본다.
+ARG PYTHON_IMAGE=python:3.14.7-slim
+ARG UV_VERSION=0.12.7
+FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
+
+FROM ${PYTHON_IMAGE} AS builder
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/app/.venv
 # django-itda 는 git 소스라 빌드 단계에만 git 이 필요하다.
 RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+COPY --from=uv /uv /bin/uv
 WORKDIR /app
 COPY pyproject.toml uv.lock ./
 RUN uv sync --frozen --no-dev --no-install-project
 
-FROM python:3.12-slim
+FROM ${PYTHON_IMAGE}
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PATH="/app/.venv/bin:$PATH"
 # gunicorn 워커 수. gunicorn 이 이 변수를 기본값으로 직접 읽는다 — 메모리가 작은 호스트는 1 로 내린다.
 ENV WEB_CONCURRENCY=2
