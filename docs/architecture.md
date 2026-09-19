@@ -9,7 +9,7 @@
 | 겹 | 누가 누구에게 | 구현 |
 |---|---|---|
 | 사람 → 허브 | 운영: 교육생이 Google 계정으로 로그인. 로컬·자체 호스팅: 이메일+비밀번호(`HUB_LOCAL_LOGIN`) | django-allauth. Google 은 자격이 있을 때만 설치된다 |
-| Claude → 허브 (OAuth) | 커스텀 커넥터가 허브 인가 서버에서 사용자 동의를 받는다. 동의 화면의 스코프 = 도구함 | django-oauth-toolkit 3.4 (PKCE S256 · CIMD · DCR · RFC 8414/9728) |
+| Claude → 허브 (OAuth) | 커스텀 커넥터가 허브 인가 서버에서 사용자 동의를 받는다. 동의 화면의 스코프 = 도구함 | django-oauth-toolkit 3.4 (PKCE S256 · CIMD · DCR · RFC 8414/9728 · RFC 9700/9207) |
 | 클라이언트 → 허브 (연결 토큰) | Claude Code 등 헤더를 보낼 수 있는 클라이언트는 도구함 화면에서 발급한 토큰을 `Authorization: Bearer` 로 보낸다 | `apps/toolbox/tokens.py` — DOT `AccessToken` 그대로(별도 모델 없음). 30일 · 사용자당 하나 · 스코프는 도구함을 따라간다 |
 
 fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Google 에 직접 로그인하면 도구함 스코프를 실을 자리가 없다. 신원은 로그인 제공자에서 받고 토큰은 허브가 발급한다.

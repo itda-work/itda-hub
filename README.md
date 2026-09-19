@@ -30,7 +30,7 @@ just env     # .env 생성 — SECRET_KEY·암호화 키·introspection 시크�
 just up      # hub-web :8000 · hub-mcp :8080 (127.0.0.1 에만). 포트가 겹치면 .env 의 HUB_WEB_PORT/HUB_MCP_PORT 와 두 주소를 바꾼다
 ```
 
-1. `http://localhost:8000` 에 `.env` 의 `HUB_ADMIN_EMAIL` / `HUB_ADMIN_PASSWORD` 로 로그인한다(회원가입도 열려 있다).
+1. `http://localhost:8000` 에 `.env` 의 `HUB_ADMIN_EMAIL` / `HUB_ADMIN_PASSWORD` 로 로그인한다(Google 자격이 없으면 이메일+비밀번호 회원가입도 열려 있다).
 2. 도구함에서 「날씨」를 담고 「연결 토큰 발급」을 누른다. 토큰은 그 화면에서 한 번만 보인다.
 3. Claude Code 에 붙인다: `claude mcp add --transport http itda-hub http://localhost:8080/mcp --header "Authorization: Bearer <토큰>"` — 대화에서 "서울 날씨 알려줘".
 4. 「궤적」에서 방금 호출이 남은 것을 본다. 「날씨」를 빼면 다음 `tools/list` 부터 사라진다.
@@ -54,10 +54,10 @@ just check               # ruff · manage.py check --fail-level WARNING · 마�
 
 ## v1 범위
 
-- 로그인: Google(django-allauth, 자격이 있을 때만 켜짐) · 이메일+비밀번호(`HUB_LOCAL_LOGIN`, 로컬 기본값).
+- 로그인: Google(django-allauth, 자격이 있을 때만 켜짐) · 이메일+비밀번호(`HUB_LOCAL_LOGIN`, 로컬 기본값). Google 이 켜지면 새 계정은 Google 로만 — 비밀번호는 기존 계정(비상용 관리자)의 로그인만.
 - 카탈로그 4종: KOSIS 통계 검색, 날씨(공개), 환율·유가(어댑터 준비 중 — 비공개). 전부 HTTPS GET, 읽기 전용.
 - 도구함, 도구별 설정(암호화 저장), 관리자 공용 키.
-- 연결 방식 둘: OAuth 인가 서버(CIMD 우선, DCR 병행, PKCE S256) · 연결 토큰(도구함 화면, 30일, 사용자당 하나).
+- 연결 방식 둘: OAuth 인가 서버(CIMD 우선, DCR 병행, PKCE S256 · RFC 9700 — implicit·password·plain 거부, RFC 9207 `iss`, refresh 재사용 탐지, 운영은 https 콜백만) · 연결 토큰(도구함 화면, 30일, 사용자당 하나).
 - 요청 단위 도구 목록 필터(스코프), 궤적 화면, 관리자 열람.
 - 배포: docker compose(hub-web + hub-mcp, SQLite WAL 공유) — 운영은 `compose.prod.yml` 을 얹고 리버스 프록시만 앞에 둔다.
 
@@ -84,4 +84,4 @@ docs/           아키텍처 · 배포 · 강의 가이드
 - [docs/architecture.md](docs/architecture.md) — 두 겹의 OAuth, 연결 토큰, 스코프 = 도구함, 프로세스 경계
 - [docs/deploy.md](docs/deploy.md) — 로컬 compose · 운영 오버레이 · 동거 배포 · 백업 · 검증 절차
 - [docs/lecture-guide.md](docs/lecture-guide.md) — 교육생 연결 가이드(Cowork · Claude Code)
-- [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)
+- [CHANGELOG.md](CHANGELOG.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)
