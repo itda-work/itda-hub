@@ -34,7 +34,7 @@ Claude Code ─Bearer▶ mcp_server    같은 /mcp — 연결 토큰도 같은 i
                        └── 도구함·설정 읽기 · 궤적(ToolCall) 쓰기 · 도구 어댑터(HTTPS GET)
 ```
 
-Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에서는 web·mcp 가 볼륨 하나를 공유하고, mcp 는 introspection 을 서비스 이름(`HUB_INTROSPECTION_URL=http://web:8000/o/introspect/`)으로 부른다. 운영은 리버스 프록시가 `/mcp` 는 MCP 프로세스로, 나머지는 Django 로 보낸다.
+Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에서는 web·mcp 가 볼륨 하나를 공유하고, mcp 는 introspection 을 서비스 이름(`HUB_INTROSPECTION_URL=http://hub-web:8000/o/introspect/`)으로 부른다. 운영은 리버스 프록시가 `/mcp` 는 MCP 프로세스로, 나머지는 Django 로 보낸다.
 
 ## 메타데이터 발견
 

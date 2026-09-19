@@ -1,14 +1,15 @@
 # 잇다 허브 — 로컬 실행. 값은 .env 에서 온다(`just env` 가 만든다). 포트는 127.0.0.1 에만 연다.
-# 운영은 같은 파일에 리버스 프록시(HTTPS 종단, /mcp → mcp:8080, 나머지 → web:8000)를 앞에 두면 된다(docs/deploy.md).
+# 운영은 이 파일 위에 compose.prod.yml 을 얹는다(포트 미노출 · 리버스 프록시가 같은 네트워크에서 hub-web:8000 · hub-mcp:8080 으로).
+# 서비스 이름에 hub- 를 붙이는 이유: 다른 compose 프로젝트(웹사이트)가 include 해도 `web` 과 부딪히지 않는다.
 name: itda-hub
 services:
-  web:
+  hub-web:
     build: .
     env_file: .env
     environment:
       DATABASE_URL: sqlite:////data/hub.sqlite3
-      # 내부 introspection 호출(mcp → web)의 Host 헤더가 web 이라 허용 목록에 넣는다.
-      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1},web
+      # 내부 introspection 호출(mcp → web)의 Host 헤더가 hub-web 이라 허용 목록에 넣는다.
+      DJANGO_ALLOWED_HOSTS: ${DJANGO_ALLOWED_HOSTS:-localhost,127.0.0.1},hub-web
     ports: ['127.0.0.1:${HUB_WEB_PORT:-8000}:8000']
     volumes: ['hub-data:/data']
     healthcheck:
@@ -18,7 +19,7 @@ services:
       retries: 30
       start_period: 10s
     restart: unless-stopped
-  mcp:
+  hub-mcp:
     build: .
     command: ['python', '-m', 'mcp_server']
     env_file: .env
@@ -26,12 +27,18 @@ services:
       HUB_ROLE: mcp
       DATABASE_URL: sqlite:////data/hub.sqlite3
       HUB_MCP_BIND: 0.0.0.0:8080
-      # 공개 주소(localhost)는 컨테이너 안에서 자기 자신이다 — 토큰 검증은 서비스 이름으로 web 에 간다.
-      HUB_INTROSPECTION_URL: http://web:8000/o/introspect/
+      # 공개 주소(localhost)는 컨테이너 안에서 자기 자신이다 — 토큰 검증은 서비스 이름으로 hub-web 에 간다.
+      HUB_INTROSPECTION_URL: http://hub-web:8000/o/introspect/
     ports: ['127.0.0.1:${HUB_MCP_PORT:-8080}:8080']
     volumes: ['hub-data:/data']
+    healthcheck:
+      test: ['CMD', 'python', '-c', "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8080/healthz', timeout=3).status == 200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
     depends_on:
-      web:
+      hub-web:
         condition: service_healthy
     restart: unless-stopped
 volumes:

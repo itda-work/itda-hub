@@ -40,7 +40,7 @@ def _env(name):
 
 def build() -> FastMCP:
     base_url = _env('HUB_BASE_URL').rstrip('/')
-    # compose 안에서는 공개 주소(localhost)가 자기 자신이라 서비스 이름(web)으로 가야 한다 — HUB_INTROSPECTION_URL.
+    # compose 안에서는 공개 주소(localhost)가 자기 자신이라 서비스 이름(hub-web)으로 가야 한다 — HUB_INTROSPECTION_URL.
     introspection_url = (
         os.environ.get('HUB_INTROSPECTION_URL', '').strip() or f'{base_url}/o/introspect/'
     )

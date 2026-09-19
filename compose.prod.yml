@@ -1,0 +1,61 @@
+# 잇다 허브 — 운영 오버레이. compose.yml 위에 얹는다. 달라지는 것은 넷뿐이다.
+#
+#   1. 호스트 포트를 묶지 않는다(`ports: !reset []`). 리버스 프록시(Caddy)가 **같은 compose 네트워크**에서
+#      hub-web:8000 · hub-mcp:8080 으로 간다. 공개 경로는 프록시만.
+#   2. web 워커 기본 1(`WEB_CONCURRENCY`, .env 가 있으면 그 값) — RAM 1~2 GiB VM 에 다른 서비스와 동거한다.
+#   3. 로그 회전(json-file 10m × 5).
+#   4. 일회성 `hub-backup`(profile ops) — SQLite 온라인 백업을 호스트 디렉터리로 뜬다.
+#
+# 단독으로(허브만의 compose 프로젝트):
+#   docker compose -f compose.yml -f compose.prod.yml up -d --build
+#   docker compose -f compose.yml -f compose.prod.yml --profile ops run --rm hub-backup
+#
+# 다른 compose 프로젝트(웹사이트)에 합칠 때 — 그쪽 compose 에서 두 파일을 한 덩어리로 include 한다.
+# 상대 경로(build: . · env_file: .env · HUB_BACKUP_DIR)는 이 저장소 디렉터리 기준으로 풀린다.
+#   include:
+#     - path: [../itda-hub/compose.yml, ../itda-hub/compose.prod.yml]
+# 그러면 Caddy 와 같은 기본 네트워크에 hub-web · hub-mcp 가 붙는다. 자세한 절차는 docs/deploy.md 「동거 배포」.
+
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: '10m'
+      max-file: '5'
+
+services:
+  hub-web:
+    <<: *logging
+    image: ${HUB_IMAGE:-itda-hub:local}
+    ports: !reset []
+    environment:
+      WEB_CONCURRENCY: ${WEB_CONCURRENCY:-1}
+    restart: unless-stopped
+
+  hub-mcp:
+    <<: *logging
+    image: ${HUB_IMAGE:-itda-hub:local}
+    ports: !reset []
+    restart: unless-stopped
+
+  # 호스트 cron(03:30)이 부른다: docker compose ... --profile ops run --rm hub-backup
+  # 같은 이미지·같은 볼륨, 사용자는 이미지 기본값 hub(uid 10001) — HUB_BACKUP_DIR 은 uid 10001 이 쓸 수 있어야 한다.
+  # HUB_ROLE=backup 이라 entrypoint 가 migrate 를 돌리지 않는다.
+  hub-backup:
+    <<: *logging
+    image: ${HUB_IMAGE:-itda-hub:local}
+    profiles: ['ops']
+    env_file: .env
+    environment:
+      HUB_ROLE: backup
+      DATABASE_URL: sqlite:////data/hub.sqlite3
+    command: ['python', 'manage.py', 'backup_db', '--dest', '/backups', '--keep-days', '${HUB_BACKUP_KEEP_DAYS:-14}']
+    volumes:
+      - hub-data:/data
+      - ${HUB_BACKUP_DIR:-./backups}:/backups
+    restart: 'no'
+
+volumes:
+  hub-data:
+    # 이름을 고정한다 — 단독 프로젝트로 띄우든 다른 프로젝트에 include 되든 같은 볼륨(= 같은 DB)을 쓴다.
+    name: ${HUB_DATA_VOLUME:-itda-hub_hub-data}

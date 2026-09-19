@@ -12,3 +12,4 @@ __pycache__
 staticfiles
 tests
 docs
+backups

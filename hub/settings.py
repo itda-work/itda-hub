@@ -36,7 +36,7 @@ HUB_MCP_URL = env('HUB_MCP_URL', 'http://localhost:8080/mcp').rstrip('/')
 HUB_HTTPS = HUB_BASE_URL.startswith('https://')
 CSRF_TRUSTED_ORIGINS = env_list('DJANGO_CSRF_TRUSTED_ORIGINS', HUB_BASE_URL)
 HUB_SETTINGS_ENCRYPTION_KEY = env('HUB_SETTINGS_ENCRYPTION_KEY', '')
-# MCP 프로세스가 토큰을 검증하러 부르는 introspection 주소. compose 안에서는 공개 주소 대신 서비스 이름(web)으로 간다.
+# MCP 프로세스가 토큰을 검증하러 부르는 introspection 주소. compose 안에서는 공개 주소 대신 서비스 이름(hub-web)으로 간다.
 HUB_INTROSPECTION_URL = env('HUB_INTROSPECTION_URL', f'{HUB_BASE_URL}/o/introspect/')
 # 그 호출의 리소스 서버 client_id — bootstrap 이 같은 값으로 Application 을 만들고 healthz 가 그 존재를 본다.
 HUB_INTROSPECTION_CLIENT_ID = env('HUB_INTROSPECTION_CLIENT_ID', '').strip()

@@ -49,8 +49,8 @@ def test_introspection_주소는_환경변수가_우선한다(hub_env, monkeypat
     from mcp_server.server import build
 
     assert build().auth.token_verifier.introspection_url == 'https://hub.example.test/o/introspect/'
-    monkeypatch.setenv('HUB_INTROSPECTION_URL', 'http://web:8000/o/introspect/')
-    assert build().auth.token_verifier.introspection_url == 'http://web:8000/o/introspect/'
+    monkeypatch.setenv('HUB_INTROSPECTION_URL', 'http://hub-web:8000/o/introspect/')
+    assert build().auth.token_verifier.introspection_url == 'http://hub-web:8000/o/introspect/'
 
 
 def test_환경변수가_비면_명시_에러(monkeypatch):

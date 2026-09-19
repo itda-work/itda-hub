@@ -61,7 +61,7 @@ def https(tmp_path_factory):
         tmp_path_factory.mktemp('https'),
         HUB_BASE_URL='https://hub.itda.work',
         HUB_MCP_URL='https://hub.itda.work/mcp',
-        DJANGO_ALLOWED_HOSTS='hub.itda.work,web',
+        DJANGO_ALLOWED_HOSTS='hub.itda.work,hub-web',
         HUB_LOCAL_LOGIN='1',
     )
 
