@@ -1,0 +1,60 @@
+# 잇다 허브 CI — 단위(ruff · manage.py check · 마이그레이션 누락 · pytest)와 이미지 빌드.
+# 라이브 스모크(just up → just smoke)와 커스텀 커넥터 OAuth 왕복은 여기서 하지 않는다(docs/deploy.md 「검증 절차」).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    name: just check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # 파이썬 버전은 `.python-version` 이 정본이다(setup-uv·uv 가 읽는다) — 여기에 따로 적지 않는다.
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - uses: extractions/setup-just@v2
+
+      - name: uv sync
+        run: uv sync --frozen
+
+      # 테스트 환경변수는 tests/settings.py 가 박는다. manage.py check 는 hub.settings 를 읽으므로 최소 값만 준다.
+      - name: just check
+        env:
+          DJANGO_SECRET_KEY: ci-only
+          HUB_LOCAL_LOGIN: '1'
+        run: just check
+
+  build:
+    name: docker build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: docker/setup-buildx-action@v3
+
+      - name: 이미지 빌드
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          load: true
+          tags: itda-hub:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: 이미지 안의 버전 확인
+        run: docker run --rm --entrypoint python itda-hub:ci -c "import sys, django; print(sys.version); print('django', django.__version__)"
