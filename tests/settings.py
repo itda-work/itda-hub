@@ -19,6 +19,7 @@ os.environ.update(
         'HUB_LOCAL_LOGIN': '1',
         'GOOGLE_OAUTH_CLIENT_ID': '',
         'HUB_SETTINGS_ENCRYPTION_KEY': Fernet.generate_key().decode(),
+        'HUB_INTROSPECTION_CLIENT_ID': 'hub-mcp',
     }
 )
 os.environ.pop('HUB_INTROSPECTION_URL', None)

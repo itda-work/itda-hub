@@ -20,6 +20,8 @@ from fastmcp.exceptions import ToolError
 from fastmcp.server.auth import RemoteAuthProvider, require_scopes
 from fastmcp.server.auth.providers.introspection import IntrospectionTokenVerifier
 from fastmcp.server.dependencies import get_access_token
+from starlette.requests import Request
+from starlette.responses import JSONResponse
 
 from mcp_server.tools import specs, toolset
 
@@ -57,7 +59,33 @@ def build() -> FastMCP:
     mcp = FastMCP('itda-hub', instructions=INSTRUCTIONS, auth=auth)
     for spec in specs():
         mcp.tool(_bind(spec), name=spec.name, auth=require_scopes(spec.scope))
+    mcp.custom_route('/healthz', methods=['GET'], include_in_schema=False)(healthz)
     return mcp
+
+
+def _db_roundtrip() -> bool:
+    from django.db import DatabaseError, connection
+
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute('SELECT 1')
+            return cursor.fetchone() == (1,)
+    except DatabaseError:
+        return False
+
+
+async def healthz(request: Request) -> JSONResponse:
+    """compose healthcheck 용(프록시는 /mcp 만 이 프로세스로 보내므로 공개되지 않는다). 인증 없음.
+
+    판정은 필드로 — `db`: 같은 SQLite 파일 왕복, `introspection_secret`: 토큰 검증 자격이 환경에 있다
+    (값은 싣지 않는다). 하나라도 거짓이면 503.
+    """
+    checks = {
+        'db': await sync_to_async(_db_roundtrip)(),
+        'introspection_secret': bool(os.environ.get('HUB_INTROSPECTION_CLIENT_SECRET', '')),
+    }
+    ok = all(checks.values())
+    return JSONResponse({'ok': ok, **checks}, status_code=200 if ok else 503)
 
 
 async def _actor():

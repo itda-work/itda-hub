@@ -59,3 +59,27 @@ def test_환경변수가_비면_명시_에러(monkeypatch):
 
     with pytest.raises(RuntimeError, match='HUB_INTROSPECTION_CLIENT_ID'):
         build()
+
+
+@pytest.mark.django_db(transaction=True)
+def test_healthz_는_DB_왕복과_introspection_시크릿을_본다(hub_env, monkeypatch):
+    """compose healthcheck 가 부르는 /healthz — 인증 없이 열리고, 시크릿 값은 싣지 않는다."""
+    import httpx
+
+    from mcp_server.server import build
+
+    app = build().http_app(path='/mcp')
+
+    async def get():
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(transport=transport, base_url='http://mcp') as http:
+            return await http.get('/healthz')
+
+    response = asyncio.run(get())
+    assert response.status_code == 200
+    assert response.json() == {'ok': True, 'db': True, 'introspection_secret': True}
+    assert 'rs-secret' not in response.text
+
+    monkeypatch.setenv('HUB_INTROSPECTION_CLIENT_SECRET', '')
+    response = asyncio.run(get())
+    assert response.status_code == 503 and response.json()['introspection_secret'] is False
