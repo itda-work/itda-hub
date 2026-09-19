@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% comment %}
+  OAuth 동의 화면 — django-oauth-toolkit 3.4 oauth2_provider/authorize.html 의 허브판.
+  계약은 원본과 같다: 숨은 필드 전부 · 거부는 이름 없는 submit · 허용은 name="allow".
+  scopes_descriptions 는 ToolboxAuthorizationView 가 도구함으로 좁힌 뒤의 목록이다(= 이 사용자의 도구함).
+  DOT 를 올리면 원본과 대조한다.
+{% endcomment %}
+{% block title %}연결 허용 · 잇다 허브{% endblock %}
+{% block main_class %}max-w-lg{% endblock %}
+{% block content %}
+<div class="card p-6 sm:p-8">
+{% if not error %}
+  <form id="authorizationForm" method="post">
+    {% csrf_token %}
+    {% for field in form %}{% if field.is_hidden %}{{ field }}{% endif %}{% endfor %}
+    <p class="text-xs font-semibold uppercase tracking-wider text-blue-600 dark:text-blue-400">연결 요청</p>
+    <h1 class="mt-1 text-xl font-bold"><span class="break-all">{{ application.name }}</span> 이(가) 잇다 허브에 연결하려고 합니다</h1>
+    <p class="mt-3 text-sm text-gray-700 dark:text-slate-300">허용하면 이 앱이 <strong>{{ user.email }}</strong> 의 도구함에 담긴 아래 도구를 부를 수 있습니다. 모두 읽기 전용이고, 호출은 궤적에 남습니다.</p>
+    <h2 class="mt-6 text-sm font-semibold">허용할 도구 ({{ scopes|length }})</h2>
+    <ul class="mt-2 divide-y divide-gray-100 dark:divide-slate-700 rounded-lg border border-gray-100 dark:border-slate-700">
+      {% for desc in scopes_descriptions %}
+      <li class="px-4 py-3 text-sm">{{ desc }}</li>
+      {% endfor %}
+    </ul>
+    <p class="mt-3 text-xs muted">도구함에서 빼면 다음 갱신부터 이 연결에서도 사라집니다. 목록을 바꾸려면 <a href="{% url 'toolbox:home' %}" class="link">도구함</a>을 고친 뒤 다시 연결하세요.</p>
+    {% if form.errors or form.non_field_errors %}
+    <div class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200" role="alert">{{ form.errors }}{{ form.non_field_errors }}</div>
+    {% endif %}
+    <div class="mt-8 flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
+      <button type="submit" class="btn btn-secondary btn-lg">거부</button>
+      <button type="submit" name="allow" value="Authorize" class="btn btn-primary btn-lg">허용</button>
+    </div>
+  </form>
+{% else %}
+  <h1 class="text-xl font-bold">연결할 수 없습니다</h1>
+  <p class="mt-3 text-sm"><code class="code-inline">{{ error.error }}</code></p>
+  <p class="mt-2 text-sm text-gray-700 dark:text-slate-300">{{ error.description }}</p>
+{% endif %}
+</div>
+{% endblock %}

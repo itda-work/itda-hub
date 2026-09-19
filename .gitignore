@@ -12,3 +12,6 @@ db.sqlite3-*
 /media/
 dist/
 backups/
+
+# Node(Tailwind 빌드 전용 — 산출물 static/css/hub.css 만 커밋)
+node_modules/

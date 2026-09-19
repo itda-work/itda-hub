@@ -1,0 +1,14 @@
+{% load allauth %}
+{% comment %} djlint:off {% endcomment %}
+{# tags: prominent·primary → 1차(파랑), outline·secondary → 2차(테두리), danger → 위험. 없으면 제출 버튼은 1차. #}
+<{% if attrs.href %}a href="{{ attrs.href }}"{% else %}button{% endif %}
+class="btn w-full {% if 'danger' in attrs.tags %}btn-danger{% elif 'outline' in attrs.tags or 'secondary' in attrs.tags or 'tertiary' in attrs.tags %}btn-secondary{% else %}btn-primary{% endif %}"
+{% if attrs.form %}form="{{ attrs.form }}"{% endif %}
+{% if attrs.id %}id="{{ attrs.id }}"{% endif %}
+{% if attrs.name %}name="{{ attrs.name }}"{% endif %}
+{% if attrs.value %}value="{{ attrs.value }}"{% endif %}
+{% if attrs.type %}type="{{ attrs.type }}"{% endif %}
+>
+{% slot %}
+{% endslot %}
+</{% if attrs.href %}a{% else %}button{% endif %}>

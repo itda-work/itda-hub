@@ -1,0 +1,125 @@
+/*
+ * 잇다 허브 전역 스타일 — 스킬.잇다 웹사이트(static/src/tailwind.css)의 바탕 토큰을 그대로 쓴다.
+ * 산출물: static/css/hub.css (just css). 템플릿은 유틸리티 클래스가 기본이고, 여러 화면이 되풀이하는
+ * 조각(버튼·카드·입력 칸·배지)만 아래 components 층에 이름을 붙인다.
+ *
+ * `.hub-form` 은 Django·allauth 가 렌더하는 폼(위젯에 클래스를 줄 수 없는 것)의 입력 칸을 입힌다.
+ */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg: 250 250 250;
+    --color-text: 17 24 39;
+  }
+  .dark {
+    --color-bg: 15 23 42;
+    --color-text: 241 245 249;
+  }
+  html {
+    font-family: 'Pretendard', system-ui, sans-serif;
+  }
+  body {
+    @apply bg-gray-50 dark:bg-slate-900 text-gray-900 dark:text-slate-100;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+  }
+  /* 포커스 링 — 키보드로 옮겨 다닐 때만(마우스 클릭에는 링을 그리지 않는다). */
+  :focus-visible {
+    @apply outline-none ring-2 ring-blue-500/60 ring-offset-2 ring-offset-white dark:ring-offset-slate-900;
+  }
+}
+
+@layer components {
+  /* ── 버튼 ─────────────────────────────────────────────────────── */
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-lg {
+    @apply px-5 py-3 text-base;
+  }
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-400 dark:text-slate-950;
+  }
+  .btn-secondary {
+    @apply border border-gray-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-gray-700 dark:text-slate-200 hover:bg-gray-50 dark:hover:bg-slate-700;
+  }
+  .btn-danger {
+    @apply border border-red-200 dark:border-red-900/60 bg-white dark:bg-slate-800 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950/40;
+  }
+  .btn-ghost {
+    @apply text-gray-500 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-white;
+  }
+
+  /* ── 카드 · 링크 · 코드 ──────────────────────────────────────── */
+  .card {
+    @apply rounded-xl border border-gray-100 dark:border-slate-700 bg-white dark:bg-slate-800;
+  }
+  .link {
+    @apply text-blue-600 dark:text-blue-400 underline-offset-2 hover:underline;
+  }
+  .muted {
+    @apply text-gray-500 dark:text-slate-400;
+  }
+  .code-inline {
+    @apply rounded bg-gray-100 dark:bg-slate-900/70 px-1.5 py-0.5 font-mono text-[0.85em] text-blue-700 dark:text-blue-300 break-words;
+  }
+  .code-block {
+    @apply overflow-x-auto rounded-lg bg-slate-800 dark:bg-slate-950 p-4 font-mono text-sm leading-relaxed text-slate-200;
+  }
+
+  /* ── 입력 칸(사이트 로그인·문의 폼과 같은 모양) ─────────────── */
+  .input,
+  .hub-form input:not([type='checkbox']):not([type='radio']):not([type='hidden']):not([type='submit']),
+  .hub-form select,
+  .hub-form textarea {
+    @apply w-full rounded-lg border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-gray-900 dark:text-slate-100 placeholder:text-gray-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition;
+  }
+  .checkbox,
+  .hub-form input[type='checkbox'] {
+    @apply h-4 w-4 rounded border-gray-300 dark:border-slate-600 text-blue-600 accent-blue-600;
+  }
+  .label,
+  .hub-form label {
+    @apply block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1.5;
+  }
+  .hub-form .field + .field {
+    @apply mt-4;
+  }
+  .hub-form .helptext,
+  .hub-form .field-help {
+    @apply mt-1 block text-xs text-gray-500 dark:text-slate-400;
+  }
+  .hub-form .errorlist {
+    @apply mt-1 space-y-0.5 text-sm text-red-600 dark:text-red-400;
+  }
+  .hub-form .field-check {
+    @apply flex items-center gap-2;
+  }
+  .hub-form .field-check label {
+    @apply mb-0;
+  }
+
+  /* ── 배지(판정·상태) ─────────────────────────────────────────── */
+  .badge {
+    @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap;
+  }
+  .badge-gray {
+    @apply bg-gray-100 text-gray-700 dark:bg-slate-700 dark:text-slate-200;
+  }
+  .badge-green {
+    @apply bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300;
+  }
+  .badge-red {
+    @apply bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300;
+  }
+  .badge-amber {
+    @apply bg-amber-50 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300;
+  }
+  .badge-blue {
+    @apply bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300;
+  }
+}

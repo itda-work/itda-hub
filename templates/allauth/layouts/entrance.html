@@ -1,0 +1,4 @@
+{% extends "allauth/layouts/base.html" %}
+{# 로그인·가입·비밀번호 재설정 — 좁은 카드 하나. 요소 모양은 templates/allauth/elements/ 가 입힌다. #}
+{% block main_class %}max-w-md{% endblock %}
+{% block main_inner %}<div class="card p-6 sm:p-8">{% block content %}{% endblock %}</div>{% endblock %}

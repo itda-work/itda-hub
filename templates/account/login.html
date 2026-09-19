@@ -1,41 +1,35 @@
 {% extends "account/base_entrance.html" %}
-{# allauth 65 account/login.html 사본. 바꾼 것은 하나 — 가입 안내 문단을 HUB_LOCAL_SIGNUP 일 때만 낸다. #}
-{# Google 이 켜지면 로컬 가입이 닫히므로 닫힌 화면으로 가는 링크를 두지 않는다(apps/accounts/adapters.py). allauth 를 올리면 원본과 대조한다. #}
+{# allauth 65 account/login.html 의 허브판. allauth 를 올리면 원본과 대조한다. 원본과 다른 점: #}
+{# 1) 소셜(Google) 로그인을 1차 액션으로 맨 위에 크게 둔다. Google 이 있으면 이메일+비밀번호는 접힌 2차(기존 계정·비상용 관리자). #}
+{# 2) 가입 안내 문단은 HUB_LOCAL_SIGNUP 일 때만 낸다 — Google 이 켜지면 로컬 가입이 닫히므로 닫힌 화면으로 가는 링크를 두지 않는다(apps/accounts/adapters.py). #}
+{# 폼 필드 이름·action·redirect_field 는 원본 그대로다. #}
 {% load i18n %}
-{% load allauth account %}
-{% block head_title %}
-    {% trans "Sign In" %}
-{% endblock head_title %}
+{% load allauth account socialaccount static %}
+{% block head_title %}로그인{% endblock head_title %}
 {% block content %}
-    {% element h1 %}
-        {% trans "Sign In" %}
-    {% endelement %}
+    {% get_providers as socialaccount_providers %}
+    <div class="text-center">
+        <img src="{% static 'img/favicon.svg' %}" alt="" class="mx-auto h-12 w-12" width="48" height="48">
+        {% element h1 %}잇다 허브에 로그인{% endelement %}
+        <p class="mt-2 text-sm muted">도구를 골라 도구함에 담고, 한 번의 로그인으로 Claude 에 연결합니다.</p>
+    </div>
+    {% if socialaccount_providers %}
+        {% include "socialaccount/snippets/provider_list.html" with process="login" %}
+        {% include "socialaccount/snippets/login_extra.html" %}
+    {% endif %}
     {% if not SOCIALACCOUNT_ONLY %}
-        {% if HUB_LOCAL_SIGNUP %}
-            {% setvar link %}
-                <a href="{{ signup_url }}">
-                {% endsetvar %}
-                {% setvar end_link %}
-                </a>
-            {% endsetvar %}
-            {% element p %}
-                {% blocktranslate %}If you have not created an account yet, then please {{ link }}sign up{{ end_link }} first.{% endblocktranslate %}
-            {% endelement %}
-        {% endif %}
         {% url 'account_login' as login_url %}
-        {% element form form=form method="post" action=login_url tags="entrance,login" %}
-            {% slot body %}
-                {% csrf_token %}
-                {% element fields form=form unlabeled=True %}
-                {% endelement %}
-                {{ redirect_field }}
-            {% endslot %}
-            {% slot actions %}
-                {% element button type="submit" tags="prominent,login" %}
-                    {% trans "Sign In" %}
-                {% endelement %}
-            {% endslot %}
-        {% endelement %}
+        {% if socialaccount_providers %}
+            <details class="mt-6 rounded-lg border border-gray-100 dark:border-slate-700 px-4 py-3"{% if form.errors %} open{% endif %}>
+                <summary class="cursor-pointer text-sm font-medium text-gray-600 dark:text-slate-300">이메일과 비밀번호로 로그인 <span class="muted font-normal">(기존 계정)</span></summary>
+                {% include "account/snippets/hub_login_form.html" %}
+            </details>
+        {% else %}
+            {% include "account/snippets/hub_login_form.html" %}
+        {% endif %}
+        {% if HUB_LOCAL_SIGNUP %}
+            <p class="mt-6 text-center text-sm muted">아직 계정이 없나요? <a href="{{ signup_url }}" class="link">회원가입</a></p>
+        {% endif %}
     {% endif %}
     {% if LOGIN_BY_CODE_ENABLED or PASSKEY_LOGIN_ENABLED %}
         {% element hr %}
@@ -52,9 +46,6 @@
                 {% endelement %}
             {% endif %}
         {% endelement %}
-    {% endif %}
-    {% if SOCIALACCOUNT_ENABLED %}
-        {% include "socialaccount/snippets/login.html" with page_layout="entrance" %}
     {% endif %}
 {% endblock content %}
 {% block extra_body %}

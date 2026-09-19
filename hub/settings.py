@@ -151,6 +151,8 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
+# 화면 자산(static/css/hub.css 는 just css 산출물, static/js·img). static/src 는 Tailwind 입력이라 싣지 않아도 무해하다.
+STATICFILES_DIRS = [BASE_DIR / 'static']
 STORAGES = {
     'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
     # 매니페스트 저장소는 collectstatic 이 전제라 운영에서만. 개발·테스트는 단순 저장소.

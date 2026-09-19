@@ -2,6 +2,24 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 를 따른다. 과업별 근거·검증은 `docs/reports/` 에 있다.
 
+## [0.3.0] — 2026-09-20
+
+화면을 스킬.잇다(`itda.work`)와 한 브랜드로. 기능·모델·URL·OAuth 흐름·폼 필드 이름은 그대로다. 근거: [docs/reports/H-4.md](docs/reports/H-4.md).
+
+### 추가
+
+- Tailwind CSS 빌드 규약(사이트와 같음): `package.json`(tailwindcss 3.4 + typography, bun) · `tailwind.config.cjs`(사이트 토큰 — Pretendard, 기본 팔레트, `darkMode: 'class'`) · `static/src/tailwind.css` → `static/css/hub.css`(minify, 커밋). `just css`/`just css-watch`. CI 에 「CSS 최신 여부」 잡(빌드 후 `git status --porcelain` 0).
+- 공통 셸: 상단 네비(워드마크 · 도구함 · 궤적 · 관리자(스태프) · 이메일 · 로그아웃), 메시지 배너, 푸터(스킬.잇다 · Powered by Python · Django), 본문 건너뛰기 링크, 라이트/다크 토글(`html.dark` + `localStorage` `theme`, 부트 가드는 정적 파일 `static/js/theme-boot.js`).
+- 로그인: Google 을 1차 액션으로, 이메일+비밀번호는 Google 이 있을 때 접힌 2차. allauth 요소(`templates/allauth/elements/`)를 입혀 가입·비밀번호 재설정·로그아웃 확인도 같은 모양.
+- 도구함 카드 · 연결 카드, 연결 토큰 화면의 복사 버튼(`static/js/hub.js`)과 Claude Code 명령 복사, 도구 설정 폼 라벨.
+- 궤적 표(판정 배지, 빈 상태 안내), OAuth 동의 화면(`templates/oauth2_provider/authorize.html` — 앱 이름·허용할 도구·허용/거부), 404·500 화면.
+- 테스트: 템플릿 정적 검사(`<style>`·`style=`·인라인 `<script>`·`on*=` 0, `lang="ko"`), 주요 화면 렌더(렌더된 동의 폼으로 허용·거부 왕복 포함), 운영(Google) 조건의 로그인 배치와 404/500.
+
+### 변경
+
+- `STATICFILES_DIRS = [BASE_DIR / 'static']` — 새 정적 파일을 collectstatic·whitenoise 가 찾도록(화면 자산 경로만).
+- 인라인 `<style>` 과 `style=` 속성 제거.
+
 ## [0.2.1] — 2026-09-20
 
 공개(`hub.itda.work`) 전 보안 강화. 근거: [docs/reports/H-3.md](docs/reports/H-3.md).

@@ -1,0 +1,15 @@
+{% load i18n allauth %}
+{# 이메일+비밀번호 로그인 폼 — account/login.html 이 1차(로컬 전용) 또는 접힌 2차(Google 이 있을 때)로 싣는다. #}
+{% element form form=form method="post" action=login_url tags="entrance,login" %}
+    {% slot body %}
+        {% csrf_token %}
+        {% element fields form=form unlabeled=True %}
+        {% endelement %}
+        {{ redirect_field }}
+    {% endslot %}
+    {% slot actions %}
+        {% element button type="submit" tags="prominent,login" %}
+            {% trans "Sign In" %}
+        {% endelement %}
+    {% endslot %}
+{% endelement %}

@@ -1,0 +1,12 @@
+{
+  "name": "itda-hub",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build:css": "bash scripts/build-css.sh"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "^0.5.19",
+    "tailwindcss": "^3.4.17"
+  }
+}

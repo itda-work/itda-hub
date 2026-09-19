@@ -1,12 +1,44 @@
 {% extends 'base.html' %}
+{% block title %}궤적 · 잇다 허브{% endblock %}
 {% block content %}
-<h1>내 궤적</h1>
-<table>
-<tr><th>시각</th><th>도구</th><th>경로</th><th>판정</th><th>결과</th><th>사유</th><th>소요</th></tr>
-{% for c in calls %}
-<tr><td>{{ c.started_at|date:'Y-m-d H:i:s' }}</td><td>{{ c.tool }}</td><td>{{ c.via }}</td><td>{{ c.kind }}</td><td>{{ c.outcome }}{% if c.error %} · {{ c.error }}{% endif %}</td><td>{{ c.reason }}</td><td>{{ c.duration_ms }}ms</td></tr>
-{% empty %}
-<tr><td colspan="7">아직 호출이 없습니다.</td></tr>
-{% endfor %}
-</table>
+<div class="mb-6">
+  <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">내 궤적</h1>
+  <p class="mt-2 muted">내 도구 호출 이력입니다(최근 100건). 판정·결과는 호출 기록의 필드 그대로입니다. 좁은 화면에서는 표를 옆으로 밀어 나머지 열을 봅니다.</p>
+</div>
+{% if calls %}
+<div class="card overflow-x-auto">
+  <table class="w-full text-sm text-left">
+    <caption class="sr-only">도구 호출 이력</caption>
+    <thead class="bg-gray-50 dark:bg-slate-800/60 text-xs uppercase tracking-wide text-gray-500 dark:text-slate-400">
+      <tr>
+        <th scope="col" class="px-4 py-3 font-semibold whitespace-nowrap">시각</th>
+        <th scope="col" class="px-4 py-3 font-semibold">도구</th>
+        <th scope="col" class="px-4 py-3 font-semibold">판정</th>
+        <th scope="col" class="px-4 py-3 font-semibold text-right">소요</th>
+        <th scope="col" class="px-4 py-3 font-semibold">결과</th>
+        <th scope="col" class="px-4 py-3 font-semibold">사유</th>
+        <th scope="col" class="px-4 py-3 font-semibold">경로</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-100 dark:divide-slate-700">
+      {% for c in calls %}
+      <tr class="align-top">
+        <td class="px-4 py-3 whitespace-nowrap font-mono text-xs text-gray-600 dark:text-slate-300"><time datetime="{{ c.started_at|date:'c' }}"><span class="sm:hidden">{{ c.started_at|date:'m-d H:i' }}</span><span class="hidden sm:inline">{{ c.started_at|date:'Y-m-d H:i:s' }}</span></time></td>
+        <td class="px-4 py-3 font-medium whitespace-nowrap">{{ c.tool }}</td>
+        <td class="px-4 py-3">{% if c.kind == 'ALLOW' %}<span class="badge badge-green">{{ c.kind }}</span>{% elif c.kind == 'DENY' %}<span class="badge badge-red">{{ c.kind }}</span>{% elif c.kind %}<span class="badge badge-amber">{{ c.kind }}</span>{% else %}<span class="muted">—</span>{% endif %}</td>
+        <td class="px-4 py-3 text-right whitespace-nowrap tabular-nums">{{ c.duration_ms }}ms</td>
+        <td class="px-4 py-3 whitespace-nowrap">{% if c.outcome %}<span class="badge badge-gray">{{ c.outcome }}</span>{% endif %}{% if c.error %} <span class="badge badge-red">{{ c.error }}</span>{% endif %}{% if not c.outcome and not c.error %}<span class="muted">—</span>{% endif %}</td>
+        <td class="px-4 py-3 text-gray-700 dark:text-slate-300 min-w-[12rem]">{{ c.reason }}</td>
+        <td class="px-4 py-3 muted whitespace-nowrap">{{ c.via }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="card p-10 text-center">
+  <p class="font-medium">아직 호출이 없습니다.</p>
+  <p class="mt-2 text-sm muted">Claude 에 연결한 뒤 도구를 부르면 여기에 남습니다. <a href="{% url 'toolbox:home' %}" class="link">도구함</a>에서 도구를 담고 연결 토큰을 발급하세요.</p>
+</div>
+{% endif %}
 {% endblock %}

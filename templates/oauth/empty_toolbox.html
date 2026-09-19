@@ -1,5 +1,10 @@
 {% extends 'base.html' %}
+{% block title %}도구함이 비어 있습니다 · 잇다 허브{% endblock %}
+{% block main_class %}max-w-lg{% endblock %}
 {% block content %}
-<h1>도구함이 비어 있습니다</h1>
-<p>Claude 에 줄 수 있는 도구가 없습니다. <a href="{% url 'toolbox:home' %}">도구함</a>에서 도구를 담은 뒤, Claude 에서 연결을 다시 시도하세요.</p>
+<div class="card p-8 text-center">
+  <h1 class="text-xl font-bold">도구함이 비어 있습니다</h1>
+  <p class="mt-3 text-sm text-gray-700 dark:text-slate-300">Claude 에 줄 수 있는 도구가 없습니다. <a href="{% url 'toolbox:home' %}" class="link">도구함</a>에서 도구를 담은 뒤, Claude 에서 연결을 다시 시도하세요.</p>
+  <p class="mt-6"><a href="{% url 'toolbox:home' %}" class="btn btn-primary">도구함으로</a></p>
+</div>
 {% endblock %}

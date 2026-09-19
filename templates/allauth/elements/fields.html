@@ -1,0 +1,13 @@
+{# allauth 원본은 form.as_p. 라벨을 항상 입력 칸에 잇고(label for), 도움말·오류를 aria-describedby 로 묶는다. #}
+{% with form=attrs.form %}
+{% if form.non_field_errors %}<div class="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-200" role="alert">{% for e in form.non_field_errors %}<p>{{ e }}</p>{% endfor %}</div>{% endif %}
+{% for field in form %}
+{% if field.is_hidden %}{{ field }}{% else %}
+<div class="field{% if field.widget_type == 'checkbox' %} field-check{% endif %}">
+  {% if field.widget_type == 'checkbox' %}{{ field }}{{ field.label_tag }}{% else %}{{ field.label_tag }}{{ field }}{% endif %}
+  {% if field.help_text %}<span class="field-help" id="{{ field.auto_id }}_helptext">{{ field.help_text|safe }}</span>{% endif %}
+  {{ field.errors }}
+</div>
+{% endif %}
+{% endfor %}
+{% endwith %}

@@ -21,6 +21,21 @@ PlayMCP 의 소비자 쪽 모양을 Django 로 세운 것이다. 세 층이 있�
 
 두 연결 방식의 토큰은 같은 저장소(DOT `AccessToken`, 원문은 저장하지 않고 체크섬만)에 있고 MCP 서버는 둘을 구분하지 않는다. Django 안에 MCP 를 호스팅하지 않는다 — django-itda 의 결정을 따른다("LLM 은 월드 서버의 클라이언트").
 
+## 화면
+
+스킬.잇다(`itda.work`)와 같은 디자인 계열 — Pretendard, 같은 색·간격, 라이트/다크(오른쪽 위 토글, 사이트와 같은 `theme` 저장 키). 모바일 폭에서도 쓸 수 있다.
+
+| 로그인 | 도구함 | 궤적 | 연결 동의(OAuth) |
+|---|---|---|---|
+| ![로그인](docs/reports/screens/login-light.png) | ![도구함](docs/reports/screens/toolbox-light.png) | ![궤적](docs/reports/screens/trajectory-light.png) | ![동의](docs/reports/screens/consent-light.png) |
+
+- **로그인** — Google 이 켜져 있으면 「Google 로 계속하기」가 1차 액션이고, 이메일+비밀번호는 접힌 2차(기존 계정·비상용 관리자)다. Google 이 없으면(로컬·자체 호스팅) 이메일+비밀번호 폼과 가입 안내가 바로 보인다.
+- **도구함** — 도구 카드(이름·출처·설명·스코프·자격증명, 담기/빼기, 설정)와 연결 카드(연결 토큰 상태·발급/재발급/폐기, MCP 주소). 발급한 토큰은 다음 화면에서 **한 번만** 보이고 복사 버튼과 Claude Code 연결 명령 예시가 붙는다.
+- **궤적** — 시각·도구·판정·소요·결과·사유·경로. 판정은 필드(`ALLOW`/`DENY`/…) 그대로 배지로 낸다.
+- **연결 동의** — 앱 이름과 허용할 도구(= 내 도구함)를 보여 주고 허용/거부를 고른다.
+
+CSS 는 Tailwind 로 빌드해 `static/css/hub.css` 로 커밋한다(`just css`, 런타임에 Node 불필요). 다크 스크린샷 등 전체는 [docs/reports/screens/](docs/reports/screens/).
+
 ## 빠른 시작 (docker compose)
 
 필요한 것: Docker(compose v2), [uv](https://docs.astral.sh/uv/), [just](https://just.systems).
@@ -67,6 +82,8 @@ just check               # ruff · manage.py check --fail-level WARNING · 마�
 
 ```
 hub/            Django 프로젝트 · 설정은 환경변수(.env.example) · healthz
+templates/      화면(공통 셸 base.html · allauth 요소 · DOT 동의 화면 · 404/500)
+static/         src/tailwind.css → css/hub.css(just css, 커밋) · js/theme-boot.js · js/hub.js(테마·복사)
 apps/accounts   로그인 · bootstrap(환경변수로 앱·관리자 보장) · backup_db(SQLite 온라인 백업)
 apps/catalog    도구 카탈로그 · 도구별 스코프 정의 · seed_catalog
 apps/toolbox    사용자 도구함 · 도구별 설정(암호화) · 연결 토큰(tokens.py, issue_token)

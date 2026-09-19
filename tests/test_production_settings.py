@@ -116,6 +116,17 @@ def test_구글_자격이_있으면_제공자가_켜지고_콜백_경로가_고�
     assert google['login_page_has_password'] is True, 'HUB_LOCAL_LOGIN=1 이면 비상용으로 병행된다'
 
 
+def test_구글이_켜지면_로그인_화면은_구글이_1차_비밀번호는_접힌_2차(google):
+    assert google['login_page_google_first'] is True
+    assert google['login_page_password_collapsed'] is True
+
+
+def test_운영_오류_화면은_허브_디자인(google):
+    assert google['page404_status'] == 404
+    assert google['page404_branded'] is True
+    assert google['page500_branded'] is True
+
+
 def test_구글로_보내는_redirect_uri_가_프록시_뒤에서_https(google):
     assert google['google_redirect_status'] == 302
     location = urlparse(google['google_redirect'])

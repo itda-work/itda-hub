@@ -69,6 +69,20 @@ def main(scenario: str) -> dict:
         page = Client().get('/accounts/login/').content.decode()
         out['login_page_has_google'] = out['login_path'] in page
         out['login_page_has_password'] = 'name="password"' in page
+        # 화면 계약(H-4): Google 이 1차 액션으로 먼저, 이메일+비밀번호는 접힌(<details>) 2차.
+        google_at, password_at = page.find(out['login_path']), page.find('name="password"')
+        out['login_page_google_first'] = 0 <= google_at < password_at
+        details_at = page.find('<details')
+        out['login_page_password_collapsed'] = (
+            0 <= details_at < password_at and '<details open' not in page[details_at:password_at]
+        )
+        # DEBUG=0 의 오류 화면 — 404 는 허브 레이아웃, 500 은 컨텍스트 없이 렌더되는 독립 문서.
+        missing = Client().get('/no-such-page/')
+        out['page404_status'] = missing.status_code
+        out['page404_branded'] = '페이지를 찾을 수 없습니다' in missing.content.decode()
+        from django.template import loader
+
+        out['page500_branded'] = '일시적인 오류' in loader.get_template('500.html').render()
         # 콜백 절대 주소는 요청에서 만든다 — 프록시 뒤에서 https 로 나와야 Google 콘솔의 등록값과 맞는다.
         proxied = Client(HTTP_HOST='hub.itda.work', HTTP_X_FORWARDED_PROTO='https')
         redirect = proxied.post(out['login_path'])

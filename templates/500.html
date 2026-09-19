@@ -1,0 +1,24 @@
+{% load static %}<!doctype html>
+{% comment %}
+  500 — Django 의 server_error 는 컨텍스트 없이 렌더한다(user·messages·request 없음, DB 도 믿을 수 없다).
+  그래서 base.html 을 잇지 않고 정적 파일만 싣는 독립 문서다. 인라인 <style>·<script> 없음.
+{% endcomment %}
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="{% static 'js/theme-boot.js' %}"></script>
+<title>일시적인 오류 · 잇다 허브</title>
+<link rel="icon" type="image/svg+xml" href="{% static 'img/favicon.svg' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+<link rel="stylesheet" href="{% static 'css/hub.css' %}">
+</head>
+<body class="min-h-screen flex items-center justify-center px-4">
+<main class="w-full max-w-lg card p-8 text-center">
+  <p class="text-sm font-semibold text-red-600 dark:text-red-400">500</p>
+  <h1 class="mt-2 text-xl font-bold">일시적인 오류가 났습니다</h1>
+  <p class="mt-3 text-sm muted">잠시 뒤 다시 시도하세요. 계속되면 관리자에게 알려 주세요.</p>
+  <p class="mt-6"><a href="/" class="btn btn-primary">처음으로</a></p>
+</main>
+</body>
+</html>

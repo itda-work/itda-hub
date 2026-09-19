@@ -1,32 +1,82 @@
 {% extends 'base.html' %}
+{% block title %}도구함 · 잇다 허브{% endblock %}
 {% block content %}
-<h1>도구함</h1>
-<p>담은 도구가 연결의 스코프가 됩니다. 연결 토큰은 즉시, 커스텀 커넥터(OAuth)는 동의 화면에서 이 목록을 봅니다.</p>
-<table>
-<tr><th>도구</th><th>출처</th><th>자격증명</th><th>도구함</th></tr>
-{% for tool, entry in rows %}
-<tr>
-  <td><strong>{{ tool.name }}</strong><br><small>{{ tool.description }}</small><br><code>{{ tool.scope }}</code></td>
-  <td>{{ tool.provider }}</td>
-  <td>{{ tool.get_credential_display }}{% if entry and tool.setting_key %} · <a href="{% url 'toolbox:setting' tool.slug %}">설정</a>{% endif %}</td>
-  <td>{% if entry %}<form method="post" action="{% url 'toolbox:remove' tool.slug %}">{% csrf_token %}<button>빼기</button></form>{% else %}<form method="post" action="{% url 'toolbox:add' tool.slug %}">{% csrf_token %}<button>담기</button></form>{% endif %}</td>
-</tr>
-{% endfor %}
-</table>
+<div class="mb-8">
+  <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">도구함</h1>
+  <p class="mt-2 muted max-w-2xl">담은 도구가 연결의 스코프가 됩니다. 연결 토큰은 즉시, 커스텀 커넥터(OAuth)는 동의 화면에서 이 목록을 봅니다.</p>
+</div>
 
-<h2>연결</h2>
-<p>MCP 주소: <code>{{ mcp_url }}</code></p>
-<ul>
-  <li><strong>claude.ai · Cowork 커스텀 커넥터</strong> — 위 주소를 넣으면 OAuth 로그인·동의 화면을 거칩니다(공개 HTTPS 배포에서만).</li>
-  <li><strong>Claude Code · 기타 MCP 클라이언트</strong> — 아래 연결 토큰을 <code>Authorization: Bearer</code> 헤더로 보냅니다. 로컬 실행은 이 길입니다.</li>
-</ul>
-{% if token %}
-<p>연결 토큰 있음 — 발급 {{ token.created|date:'Y-m-d H:i' }} · 만료 {{ token.expires|date:'Y-m-d H:i' }} · 스코프 <code>{{ token.scope|default:'(없음 — 도구를 담으면 채워집니다)' }}</code></p>
-<p>토큰 원문은 다시 볼 수 없습니다. 잃어버렸으면 재발급하세요.</p>
-<form method="post" action="{% url 'toolbox:token_issue' %}" style="display:inline">{% csrf_token %}<button>재발급</button></form>
-<form method="post" action="{% url 'toolbox:token_revoke' %}" style="display:inline">{% csrf_token %}<button>폐기</button></form>
-{% else %}
-<p>연결 토큰이 없습니다.</p>
-<form method="post" action="{% url 'toolbox:token_issue' %}">{% csrf_token %}<button>연결 토큰 발급</button></form>
-{% endif %}
+<section aria-labelledby="catalog-heading">
+  <h2 id="catalog-heading" class="sr-only">도구 카탈로그</h2>
+  <ul class="grid gap-4 sm:grid-cols-2">
+    {% for tool, entry in rows %}
+    <li class="card p-5 flex flex-col{% if entry %} ring-1 ring-blue-500/30 dark:ring-blue-400/30{% endif %}">
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <h3 class="font-semibold text-gray-900 dark:text-white">{{ tool.name }}</h3>
+          <p class="mt-0.5 text-xs muted">{{ tool.provider }}</p>
+        </div>
+        {% if entry %}<span class="badge badge-blue">담김</span>{% else %}<span class="badge badge-gray">안 담김</span>{% endif %}
+      </div>
+      <p class="mt-3 text-sm text-gray-700 dark:text-slate-300">{{ tool.description }}</p>
+      <dl class="mt-3 grid grid-cols-[auto,1fr] gap-x-3 gap-y-1 text-xs">
+        <dt class="muted">스코프</dt><dd><code class="code-inline">{{ tool.scope }}</code></dd>
+        <dt class="muted">자격증명</dt><dd class="text-gray-700 dark:text-slate-300">{{ tool.get_credential_display }}</dd>
+      </dl>
+      <div class="mt-auto pt-4 flex flex-wrap items-center gap-2">
+        {% if entry %}
+          <form method="post" action="{% url 'toolbox:remove' tool.slug %}">{% csrf_token %}
+            <button type="submit" class="btn btn-secondary" aria-label="{{ tool.name }} 빼기">
+              <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-blue-600 dark:bg-blue-500" aria-hidden="true"><span class="absolute right-0.5 h-4 w-4 rounded-full bg-white"></span></span>
+              빼기
+            </button>
+          </form>
+          {% if tool.setting_key %}<a href="{% url 'toolbox:setting' tool.slug %}" class="btn btn-ghost" aria-label="{{ tool.name }} 설정">설정</a>{% endif %}
+        {% else %}
+          <form method="post" action="{% url 'toolbox:add' tool.slug %}">{% csrf_token %}
+            <button type="submit" class="btn btn-primary" aria-label="{{ tool.name }} 담기">
+              <span class="relative inline-flex h-5 w-9 shrink-0 items-center rounded-full bg-white/30 dark:bg-slate-950/30" aria-hidden="true"><span class="absolute left-0.5 h-4 w-4 rounded-full bg-white dark:bg-slate-950/70"></span></span>
+              담기
+            </button>
+          </form>
+        {% endif %}
+      </div>
+    </li>
+    {% empty %}
+    <li class="card p-8 text-center muted sm:col-span-2">공개된 도구가 아직 없습니다.</li>
+    {% endfor %}
+  </ul>
+</section>
+
+<section aria-labelledby="connect-heading" class="mt-12">
+  <h2 id="connect-heading" class="text-xl font-bold tracking-tight">연결</h2>
+  <div class="mt-4 grid gap-4 lg:grid-cols-5">
+    <div class="card p-5 lg:col-span-3">
+      <h3 class="font-semibold">연결 토큰</h3>
+      <p class="mt-1 text-sm muted">Claude Code · 기타 MCP 클라이언트는 이 토큰을 <code class="code-inline">Authorization: Bearer</code> 헤더로 보냅니다. 로컬 실행은 이 길입니다.</p>
+      {% if token %}
+        <dl class="mt-4 grid grid-cols-[auto,1fr] gap-x-4 gap-y-1.5 text-sm">
+          <dt class="muted">상태</dt><dd><span class="badge badge-green">연결 토큰 있음</span></dd>
+          <dt class="muted">발급</dt><dd>{{ token.created|date:'Y-m-d H:i' }}</dd>
+          <dt class="muted">만료</dt><dd>{{ token.expires|date:'Y-m-d H:i' }}</dd>
+          <dt class="muted">스코프</dt><dd><code class="code-inline">{{ token.scope|default:'(없음 — 도구를 담으면 채워집니다)' }}</code></dd>
+        </dl>
+        <p class="mt-4 text-sm text-amber-800 dark:text-amber-300">토큰 원문은 다시 볼 수 없습니다. 잃어버렸으면 재발급하세요.</p>
+        <div class="mt-4 flex flex-wrap gap-2">
+          <form method="post" action="{% url 'toolbox:token_issue' %}">{% csrf_token %}<button type="submit" class="btn btn-primary">재발급</button></form>
+          <form method="post" action="{% url 'toolbox:token_revoke' %}">{% csrf_token %}<button type="submit" class="btn btn-danger">폐기</button></form>
+        </div>
+      {% else %}
+        <p class="mt-4 text-sm"><span class="badge badge-gray">연결 토큰이 없습니다.</span></p>
+        <form method="post" action="{% url 'toolbox:token_issue' %}" class="mt-4">{% csrf_token %}<button type="submit" class="btn btn-primary">연결 토큰 발급</button></form>
+      {% endif %}
+    </div>
+    <div class="card p-5 lg:col-span-2">
+      <h3 class="font-semibold">MCP 주소</h3>
+      <p class="mt-2"><code class="code-inline">{{ mcp_url }}</code></p>
+      <h3 class="mt-5 font-semibold">claude.ai · Cowork 커스텀 커넥터</h3>
+      <p class="mt-1 text-sm muted">위 주소를 넣으면 OAuth 로그인·동의 화면을 거칩니다(공개 HTTPS 배포에서만). 동의 화면의 권한이 곧 이 도구함입니다.</p>
+    </div>
+  </div>
+</section>
 {% endblock %}

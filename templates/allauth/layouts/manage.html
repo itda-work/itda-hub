@@ -1,0 +1,4 @@
+{% extends "allauth/layouts/base.html" %}
+{# 로그아웃 확인·계정 관리 화면 — 조금 넓은 카드 하나. #}
+{% block main_class %}max-w-xl{% endblock %}
+{% block main_inner %}<div class="card p-6 sm:p-8">{% block content %}{% endblock %}</div>{% endblock %}

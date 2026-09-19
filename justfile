@@ -46,6 +46,15 @@ backup:
 smoke:
     uv run python scripts/mcp_smoke.py
 
+# --- 화면(CSS) — 스킬.잇다 웹사이트와 같은 규약 ---
+# Tailwind 빌드 → static/css/hub.css(minify, 커밋 대상 — 런타임에 Node 불필요). 처음 한 번 `bun install`.
+# 템플릿에 새 클래스를 쓰면 반드시 다시 빌드한다(CI 의 css 잡이 커밋본과 빌드 결과가 같은지 검사한다).
+css:
+    bash scripts/build-css.sh
+
+css-watch:
+    bash scripts/build-css.sh --watch
+
 # --- 검증 ---
 check:
     uv run ruff check .

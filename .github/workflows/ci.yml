@@ -1,4 +1,4 @@
-# 잇다 허브 CI — 단위(ruff · manage.py check · 마이그레이션 누락 · pytest)와 이미지 빌드.
+# 잇다 허브 CI — CSS 최신 여부, 단위(ruff · manage.py check · 마이그레이션 누락 · pytest)와 이미지 빌드.
 # 라이브 스모크(just up → just smoke)와 커스텀 커넥터 OAuth 왕복은 여기서 하지 않는다(docs/deploy.md 「검증 절차」).
 name: CI
 
@@ -15,6 +15,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  css:
+    name: Tailwind CSS 최신 여부
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+
+      - name: 의존성 설치
+        run: bun install --frozen-lockfile
+
+      - name: CSS 빌드
+        run: bash scripts/build-css.sh
+
+      # 템플릿에 새 Tailwind 클래스를 쓰고 CSS 를 다시 빌드하지 않으면 그 스타일이 통째로 빠진다.
+      # 산출물을 커밋 대상으로 두는 대신 이 가드로 최신 여부를 지킨다(스킬.잇다 웹사이트와 같은 규약).
+      # `git status --porcelain` 은 수정과 미추적을 모두 잡는다(`git diff` 는 미추적 파일에 조용하다).
+      - name: 커밋된 CSS 가 최신인지 확인
+        run: |
+          drift="$(git status --porcelain -- static/css/hub.css)"
+          if [ -n "$drift" ]; then
+            echo "::error::static/css/hub.css 가 최신이 아니거나 커밋되지 않았다. 'just css' 후 커밋한다."
+            echo "$drift"
+            git diff -- static/css/hub.css | head -50
+            exit 1
+          fi
+
   check:
     name: just check
     runs-on: ubuntu-latest

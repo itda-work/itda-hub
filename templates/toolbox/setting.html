@@ -1,10 +1,28 @@
 {% extends 'base.html' %}
+{% block title %}{{ tool.name }} 설정 · 잇다 허브{% endblock %}
+{% block main_class %}max-w-xl{% endblock %}
 {% block content %}
-<h1>{{ tool.name }} 설정</h1>
-<form method="post">{% csrf_token %}
-{% if tool.credential == 'shared' %}<p><label><input type="checkbox" name="use_shared" {% if entry.use_shared_credential %}checked{% endif %}> 관리자 공용 키 사용</label></p>{% endif %}
-{% if tool.setting_key %}<p><label>{{ tool.setting_key }} <input type="password" name="value" autocomplete="off" placeholder="{% if has_value %}저장된 값이 있습니다. 바꾸려면 입력{% else %}값 입력{% endif %}"></label></p>{% endif %}
-<button>저장</button> <a href="{% url 'toolbox:home' %}">돌아가기</a>
+<p class="text-sm"><a href="{% url 'toolbox:home' %}" class="link">← 도구함</a></p>
+<h1 class="mt-2 text-2xl font-bold tracking-tight">{{ tool.name }} 설정</h1>
+<p class="mt-1 text-sm muted">{{ tool.provider }} · {{ tool.get_credential_display }}</p>
+
+<form method="post" class="hub-form card p-6 mt-6">{% csrf_token %}
+  {% if tool.credential == 'shared' %}
+  <div class="field field-check">
+    <input type="checkbox" id="id_use_shared" name="use_shared" {% if entry.use_shared_credential %}checked{% endif %}>
+    <label for="id_use_shared">관리자 공용 키 사용</label>
+  </div>
+  {% endif %}
+  {% if tool.setting_key %}
+  <div class="field">
+    <label for="id_value">{{ tool.setting_key }}</label>
+    <input type="password" id="id_value" name="value" autocomplete="off" aria-describedby="value-help" placeholder="{% if has_value %}저장된 값이 있습니다. 바꾸려면 입력{% else %}값 입력{% endif %}">
+    <span id="value-help" class="field-help">값은 암호화해 저장하고 다시 표시하지 않습니다.{% if has_value %} 비워 두면 저장된 값을 그대로 둡니다.{% endif %}</span>
+  </div>
+  {% endif %}
+  <div class="mt-6 flex flex-wrap gap-2">
+    <button type="submit" class="btn btn-primary">저장</button>
+    <a href="{% url 'toolbox:home' %}" class="btn btn-secondary">돌아가기</a>
+  </div>
 </form>
-<p><small>값은 암호화해 저장하고 다시 표시하지 않습니다.</small></p>
 {% endblock %}
