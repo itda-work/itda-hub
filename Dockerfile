@@ -10,6 +10,8 @@ RUN uv sync --frozen --no-dev --no-install-project
 
 FROM python:3.12-slim
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1 PATH="/app/.venv/bin:$PATH"
+# gunicorn 워커 수. gunicorn 이 이 변수를 기본값으로 직접 읽는다 — 메모리가 작은 호스트는 1 로 내린다.
+ENV WEB_CONCURRENCY=2
 WORKDIR /app
 COPY --from=builder /app/.venv /app/.venv
 COPY . .
@@ -19,4 +21,4 @@ RUN DJANGO_SECRET_KEY=build-only DJANGO_DEBUG=0 HUB_LOCAL_LOGIN=1 python manage.
 USER hub
 VOLUME ["/data"]
 ENTRYPOINT ["/app/deploy/entrypoint.sh"]
-CMD ["gunicorn", "hub.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2"]
+CMD ["gunicorn", "hub.wsgi:application", "--bind", "0.0.0.0:8000"]

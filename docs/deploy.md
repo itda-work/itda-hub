@@ -12,6 +12,7 @@ just down
 - `deploy/entrypoint.sh` 가 web 컨테이너에서만 `migrate` → `seed_catalog` → `bootstrap` 을 돌린다. mcp 컨테이너는 web 이 `/healthz` 로 healthy 가 된 뒤 뜬다.
 - `bootstrap` 이 환경변수로 보장하는 것: introspection 리소스 서버 Application(`HUB_INTROSPECTION_CLIENT_ID/SECRET`), 연결 토큰용 Application(`hub-personal`), 관리자 계정(`HUB_ADMIN_EMAIL/PASSWORD` — 이미 있으면 비밀번호 불변). 멱등이고 비밀은 출력하지 않는다.
 - 두 컨테이너는 볼륨 `hub-data` 의 SQLite 파일 하나를 공유한다(WAL). mcp 의 토큰 검증은 공개 주소가 아니라 서비스 이름으로 간다(`HUB_INTROSPECTION_URL=http://web:8000/o/introspect/`, `DJANGO_ALLOWED_HOSTS` 에 `web` 추가 — compose 가 넣는다).
+- web 워커 수는 `WEB_CONCURRENCY`(기본 2)다. gunicorn 이 직접 읽는다. 유휴 실측은 워커 2개 125 MiB · 1개 약 90 MiB · mcp 92 MiB 이므로, RAM 1 GiB 호스트에 다른 서비스와 같이 올리면 1 로 둔다.
 - 포트가 겹치면 `.env` 의 `HUB_WEB_PORT`/`HUB_MCP_PORT` 를 바꾸고 `HUB_BASE_URL`/`HUB_MCP_URL` 도 같이 맞춘다. 두 주소는 화면과 발급 안내에 그대로 찍힌다.
 - 로그인은 이메일+비밀번호(`HUB_LOCAL_LOGIN=1`). Google 을 붙이려면 `GOOGLE_OAUTH_CLIENT_ID/SECRET` 을 채운다(리디렉션 URI `${HUB_BASE_URL}/accounts/google/login/callback/`).
 - 연결 확인: `just token <이메일> --tools weather,kosis --shared` 로 토큰을 찍고 `HUB_TOKEN=<토큰> just smoke`. 토큰 없이 거부 · 도구함 스코프만큼의 목록 · 날씨 호출 · KOSIS(키 있으면 ok, 없으면 거부) 네 축을 한 번에 잰다.
