@@ -23,7 +23,7 @@ def main(scenario: str) -> dict:
 
     call_command('migrate', verbosity=0)
     call_command('seed_catalog', verbosity=0)
-    out = {}
+    out = {'deploy_check': _deploy_check()}
 
     if scenario == 'https':
         out['settings'] = {
@@ -49,6 +49,16 @@ def main(scenario: str) -> dict:
         out['proxied_is_secure'] = behind.is_secure()
         out['proxied_absolute'] = behind.build_absolute_uri('/accounts/login/')
         out['bare_is_secure'] = bare.is_secure()
+        # HSTS 는 https 로 본 요청에만 붙는다(SecurityMiddleware) — 컨테이너 사이 평문 호출에는 없다.
+        out['hsts_proxied'] = proxied.get('/healthz').get('Strict-Transport-Security', '')
+        out['hsts_bare'] = (
+            Client().get('/healthz', HTTP_HOST='hub-web').get('Strict-Transport-Security', '')
+        )
+        out['healthz_bare_status'] = Client().get('/healthz', HTTP_HOST='hub-web').status_code
+        # 운영(https)에서 등록되는 콜백 스킴 — DCR 로 https 와 http 루프백을 각각 등록해 본다.
+        out['redirect_schemes'] = settings.OAUTH2_PROVIDER['ALLOWED_REDIRECT_URI_SCHEMES']
+        out['dcr_https'] = _dcr(proxied, 'https://claude.ai/api/mcp/auth_callback')
+        out['dcr_http_loopback'] = _dcr(proxied, 'http://127.0.0.1:33418/callback')
 
     if scenario == 'google':
         out['google_installed'] = (
@@ -64,7 +74,96 @@ def main(scenario: str) -> dict:
         redirect = proxied.post(out['login_path'])
         out['google_redirect_status'] = redirect.status_code
         out['google_redirect'] = redirect.get('Location', '')
+        out.update(_signup_policy())
 
+    return out
+
+
+def _deploy_check() -> list[str]:
+    """`manage.py check --deploy` 가 내는 것 중 조용히 두지 않은 WARNING 이상의 id."""
+    from django.core import checks
+
+    return sorted(
+        m.id
+        for m in checks.run_checks(include_deployment_checks=True)
+        if m.level >= checks.WARNING and not m.is_silenced()
+    )
+
+
+def _dcr(client, redirect_uri) -> int:
+    response = client.post(
+        '/o/register/',
+        data=json.dumps(
+            {
+                'client_name': 'probe',
+                'redirect_uris': [redirect_uri],
+                'grant_types': ['authorization_code', 'refresh_token'],
+                'response_types': ['code'],
+                'token_endpoint_auth_method': 'none',
+            }
+        ),
+        content_type='application/json',
+    )
+    return response.status_code
+
+
+def _signup_policy() -> dict:
+    """Google 이 켜진 운영 — 로컬 가입은 닫히고, 로컬 로그인·Google 가입은 열린다."""
+    from allauth.core.context import request_context
+    from allauth.socialaccount.adapter import get_adapter as get_social_adapter
+    from allauth.socialaccount.helpers import complete_social_login
+    from allauth.socialaccount.models import SocialAccount
+    from django.conf import settings
+    from django.contrib.auth import get_user_model
+    from django.contrib.auth.models import AnonymousUser
+    from django.contrib.messages.middleware import MessageMiddleware
+    from django.contrib.sessions.middleware import SessionMiddleware
+    from django.test import Client, RequestFactory
+
+    User = get_user_model()
+    out = {'local_signup_setting': settings.HUB_LOCAL_SIGNUP}
+    client = Client()
+    out['login_page_has_signup_link'] = (
+        '/accounts/signup/' in client.get('/accounts/login/').content.decode()
+    )
+    page = client.get('/accounts/signup/')
+    out['signup_page_status'] = page.status_code
+    out['signup_page_has_form'] = 'name="password1"' in page.content.decode()
+    client.post(
+        '/accounts/signup/',
+        {
+            'email': 'mallory@example.com',
+            'password1': 'long-enough-pw',
+            'password2': 'long-enough-pw',
+        },
+    )
+    out['local_signup_created'] = User.objects.filter(email='mallory@example.com').exists()
+
+    # 비상용 관리자 — 이미 있는 로컬 계정은 비밀번호로 들어온다.
+    User.objects.create_user(username='admin', email='admin@example.com', password='admin-pw')
+    login = client.post('/accounts/login/', {'login': 'admin@example.com', 'password': 'admin-pw'})
+    out['local_login_status'] = login.status_code
+    out['local_login_authenticated'] = client.get('/toolbox/').status_code == 200
+
+    # Google 가입 — 콜백이 끝난 뒤의 allauth 흐름(complete_social_login)을 그대로 탄다.
+    request = RequestFactory().get('/accounts/google/login/callback/')
+    SessionMiddleware(lambda r: None).process_request(request)
+    MessageMiddleware(lambda r: None).process_request(request)
+    request.user = AnonymousUser()
+    # Google userinfo 응답 모양 그대로 제공자에게 SocialLogin 을 만들게 한다(콜백 뒤와 같은 객체).
+    provider = get_social_adapter().get_provider(request, 'google')
+    sociallogin = provider.sociallogin_from_response(
+        request,
+        {'sub': 'g-123', 'email': 'carol@gmail.com', 'email_verified': True, 'name': 'Carol'},
+    )
+    sociallogin.state = {'process': 'login'}
+    # allauth 어댑터는 요청을 컨텍스트에서 읽는다(평소엔 AccountMiddleware 가 건다).
+    with request_context(request):
+        response = complete_social_login(request, sociallogin)
+    out['google_signup_status'] = response.status_code
+    out['google_signup_created'] = SocialAccount.objects.filter(
+        provider='google', uid='g-123', user__email='carol@gmail.com'
+    ).exists()
     return out
 
 

@@ -49,6 +49,8 @@ if not GOOGLE_OAUTH_CLIENT_ID and not HUB_LOCAL_LOGIN:
     raise RuntimeError(
         '로그인 수단이 없다 — GOOGLE_OAUTH_CLIENT_ID 를 두거나 HUB_LOCAL_LOGIN=1 로 켜라(.env.example 참고)'
     )
+# 가입 정책: Google 이 켜지면 새 계정은 Google 로만. 그때 HUB_LOCAL_LOGIN 은 기존 로컬 계정(비상용 관리자)의 로그인만.
+HUB_LOCAL_SIGNUP = HUB_LOCAL_LOGIN and not GOOGLE_OAUTH_CLIENT_ID
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -103,6 +105,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.accounts.context_processors.signup',
             ],
         },
     },
@@ -169,6 +172,9 @@ ACCOUNT_LOGIN_METHODS = {'email'}
 ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*'] if HUB_LOCAL_LOGIN else ['email*']
 ACCOUNT_EMAIL_VERIFICATION = 'none'
 SOCIALACCOUNT_ONLY = not HUB_LOCAL_LOGIN
+# 가입 여닫기는 어댑터가 HUB_LOCAL_SIGNUP 으로 판정한다(로컬 가입만 닫고 Google 가입은 연다).
+ACCOUNT_ADAPTER = 'apps.accounts.adapters.AccountAdapter'
+SOCIALACCOUNT_ADAPTER = 'apps.accounts.adapters.SocialAccountAdapter'
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 SOCIALACCOUNT_PROVIDERS = (
     {
@@ -215,6 +221,26 @@ OAUTH2_PROVIDER = {
     # RFC 9700: 토큰 원문은 저장하지 않고 체크섬만 둔다. DB·admin 에서 쓸 수 있는 토큰이 보이지 않는다.
     # introspection·검증은 체크섬으로 찾으므로 동작이 같다. 연결 토큰(apps.toolbox.tokens)도 같은 저장소다.
     'COMPLIANT_BCP_RFC9700_TOKEN_STORAGE': True,
+    # --- RFC 9700 나머지(DOT 4.0 에서 기본값이 된다). 커스텀 커넥터는 code + PKCE S256 + https 콜백만 쓴다. ---
+    # implicit·password grant 거부 — 메타데이터 grant_types_supported 에서도 빠진다.
+    'COMPLIANT_BCP_RFC9700_IMPLICIT_GRANT': True,
+    'COMPLIANT_BCP_RFC9700_PASSWORD_GRANT': True,
+    # PKCE plain 거부(S256 만). 메타데이터 code_challenge_methods_supported 도 S256 만.
+    'COMPLIANT_BCP_RFC9700_PKCE_METHOD': True,
+    'COMPLIANT_BCP_RFC9700_PKCE_REQUIRED': True,
+    # ?access_token= 거부. 토큰은 Authorization 헤더로만(introspection 은 POST 본문이라 무관).
+    'COMPLIANT_BCP_RFC9700_ACCESS_TOKEN_TRANSPORT': True,
+    # RFC 9207 — 인가 응답 리디렉트에 iss(= HUB_BASE_URL)를 싣는다(mix-up 방어).
+    'COMPLIANT_BCP_RFC9700_AUTHZ_RESPONSE_ISS': True,
+    # 회전된 refresh 토큰이 다시 쓰이면 그 계열을 통째로 폐기한다. 게이트는 되돌림을 check 에러로 만든다.
+    'REFRESH_TOKEN_REUSE_PROTECTION': True,
+    'COMPLIANT_BCP_RFC9700_REFRESH_TOKEN': True,
+    'COMPLIANT_BCP_RFC9700_REDIRECT_URI_MATCHING': True,
+    # 공개(https) 배포에서는 https 콜백만 받는다 — claude.ai·Cowork 콜백은 https://claude.ai/api/mcp/auth_callback.
+    # 로컬(http://localhost)은 http 도 받는다. 대가: 운영에서 네이티브 앱의 http 루프백 콜백(RFC 8252)은 등록되지 않는다 —
+    # Claude Code 는 OAuth 대신 연결 토큰(Bearer)으로 붙으므로 영향이 없다.
+    'ALLOWED_REDIRECT_URI_SCHEMES': ['https'] if HUB_HTTPS else ['http', 'https'],
+    'COMPLIANT_BCP_RFC9700_REDIRECT_URI_SCHEME': HUB_HTTPS,
 }
 
 LOGGING = {
@@ -228,3 +254,13 @@ if HUB_HTTPS:
     SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
+    # HSTS 헤더는 Django 가 낸다(SecurityMiddleware 는 https 요청에만 붙인다 — 프록시 헤더로 판정).
+    # includeSubDomains 는 이 호스트 아래(*.hub.itda.work)만 덮는다 — 형제 호스트(itda.work 등)는 무관하다.
+    SECURE_HSTS_SECONDS = int(env('HUB_HSTS_SECONDS', str(60 * 60 * 24 * 365)))
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    # preload 목록은 등록 도메인(itda.work) 단위라 서브도메인 앱이 정할 일이 아니다 → 끄고 security.W021 을 조용히 둔다.
+    SECURE_HSTS_PRELOAD = False
+    # http → https 리디렉트는 앞단 Caddy 가 한다. Django 에서 켜면 컨테이너 사이 평문 호출(healthcheck,
+    # hub-mcp → hub-web introspection)이 전부 301 로 튄다 → 끄고 security.W008 을 조용히 둔다.
+    SECURE_SSL_REDIRECT = False
+    SILENCED_SYSTEM_CHECKS = ['security.W008', 'security.W021']

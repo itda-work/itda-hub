@@ -1,0 +1,4 @@
+{% extends "base.html" %}
+{# allauth 화면(로그인·가입·로그아웃)을 허브 레이아웃에 얹는다. allauth 기본 레이아웃의 메뉴는 가입 정책과 무관하게 #}
+{# 「Sign Up」 링크를 내므로 쓰지 않는다 — 가입 안내는 account/login.html 이 HUB_LOCAL_SIGNUP 으로 가린다. #}
+{% block title %}{% block head_title %}{% endblock head_title %} · 잇다 허브{% endblock title %}

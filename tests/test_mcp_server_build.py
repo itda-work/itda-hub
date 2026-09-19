@@ -70,16 +70,68 @@ def test_healthz_는_DB_왕복과_introspection_시크릿을_본다(hub_env, mon
 
     app = build().http_app(path='/mcp')
 
-    async def get():
+    async def get(user_agent='kube-probe/1.0'):
         transport = httpx.ASGITransport(app=app)
         async with httpx.AsyncClient(transport=transport, base_url='http://mcp') as http:
-            return await http.get('/healthz')
+            return await http.get('/healthz', headers={'User-Agent': user_agent})
 
     response = asyncio.run(get())
     assert response.status_code == 200
     assert response.json() == {'ok': True, 'db': True, 'introspection_secret': True}
     assert 'rs-secret' not in response.text
+    assert response.headers['cache-control'] == 'no-store'
+    # 요청이 누구든(UA) 같은 판정 — 봇·브라우저라고 다른 응답을 내지 않는다.
+    for ua in ('Mozilla/5.0', 'curl/8.0', ''):
+        other = asyncio.run(get(ua))
+        assert (other.status_code, other.json()) == (200, response.json())
 
     monkeypatch.setenv('HUB_INTROSPECTION_CLIENT_SECRET', '')
     response = asyncio.run(get())
     assert response.status_code == 503 and response.json()['introspection_secret'] is False
+
+
+def _access_record(path, status):
+    import logging
+
+    return logging.LogRecord(
+        'uvicorn.access',
+        logging.INFO,
+        __file__,
+        0,
+        '%s - "%s %s HTTP/%s" %d',
+        ('127.0.0.1:5000', 'GET', path, '1.1', status),
+        None,
+    )
+
+
+def test_접근_로그는_성공한_healthz_만_거른다():
+    """healthcheck(10초) 줄이 접근 로그를 덮지 않게. 실패(503)와 다른 경로는 남긴다."""
+    from mcp_server.logs import HealthzAccessFilter, uvicorn_log_config
+
+    keep = HealthzAccessFilter().filter
+    assert keep(_access_record('/healthz', 200)) is False
+    assert keep(_access_record('/healthz', 503)) is True, '헬스가 나빠진 순간은 보여야 한다'
+    assert keep(_access_record('/mcp', 200)) is True
+    assert keep(_access_record('/healthzz', 200)) is True
+
+    config = uvicorn_log_config()
+    assert config['handlers']['access']['filters'] == ['no_healthz_ok']
+    assert 'filters' not in config['handlers']['default'], '오류 로그는 건드리지 않는다'
+
+
+def test_uvicorn_이_그_설정으로_접근_로그를_거른다(capfd):
+    """실제 uvicorn 의 dictConfig 경로로 — 설정이 적용돼 access 핸들러에 필터가 붙는지."""
+    import logging
+
+    import uvicorn
+
+    from mcp_server.logs import uvicorn_log_config
+
+    uvicorn.Config(app=lambda *a: None, log_config=uvicorn_log_config())
+    access = logging.getLogger('uvicorn.access')
+    access.handle(_access_record('/healthz', 200))
+    access.handle(_access_record('/mcp', 200))
+    err = capfd.readouterr()
+    out = err.out + err.err
+    assert '"GET /mcp HTTP/1.1" 200' in out
+    assert '/healthz' not in out

@@ -85,7 +85,11 @@ async def healthz(request: Request) -> JSONResponse:
         'introspection_secret': bool(os.environ.get('HUB_INTROSPECTION_CLIENT_SECRET', '')),
     }
     ok = all(checks.values())
-    return JSONResponse({'ok': ok, **checks}, status_code=200 if ok else 503)
+    return JSONResponse(
+        {'ok': ok, **checks},
+        status_code=200 if ok else 503,
+        headers={'Cache-Control': 'no-store'},
+    )
 
 
 async def _actor():

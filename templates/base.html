@@ -10,6 +10,7 @@
   td, th { border-bottom: 1px solid #ddd; padding: .5rem; text-align: left; vertical-align: top; }
   .msg { background: #eef; padding: .5rem 1rem; margin: .5rem 0; } code { background: #f4f4f4; padding: 0 .3rem; }
 </style>
+{% block extra_head %}{% endblock %}
 </head>
 <body>
 <nav>
@@ -19,5 +20,6 @@
 </nav>
 {% for m in messages %}<div class="msg">{{ m }}</div>{% endfor %}
 {% block content %}{% endblock %}
+{% block extra_body %}{% endblock %}
 </body>
 </html>

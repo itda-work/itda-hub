@@ -2,6 +2,7 @@
 
 import json
 import os
+import secrets
 import subprocess
 import sys
 from pathlib import Path
@@ -22,7 +23,9 @@ def _probe(scenario, tmp_path, **env):
     # 개발자의 .env 가 빈칸을 채우지 않도록 전부 명시한다(hub.env 는 없는 키만 채운다).
     base.update(
         {
-            'DJANGO_SECRET_KEY': 'probe-only',
+            'DJANGO_SECRET_KEY': secrets.token_urlsafe(
+                50
+            ),  # check --deploy 가 약한 키(W009)를 본다
             'DJANGO_DEBUG': '0',
             'DATABASE_URL': f'sqlite:///{tmp_path / "hub.sqlite3"}',
             'HUB_SETTINGS_ENCRYPTION_KEY': Fernet.generate_key().decode(),
@@ -120,3 +123,34 @@ def test_구글로_보내는_redirect_uri_가_프록시_뒤에서_https(google):
     query = parse_qs(location.query)
     assert query['redirect_uri'] == ['https://hub.itda.work/accounts/google/login/callback/']
     assert query['client_id'] == ['dummy.apps.googleusercontent.com']
+
+
+def test_운영_env_의_check_deploy_는_0건(https, google):
+    """RFC 9700(DOT W001–W008)·HSTS 까지 — 조용히 둔 것은 security.W008(SSL 리디렉트는 Caddy)·W021(preload)뿐."""
+    assert https['deploy_check'] == []
+    assert google['deploy_check'] == []
+
+
+def test_HSTS_는_https_로_본_요청에만_붙는다(https):
+    assert https['hsts_proxied'] == 'max-age=31536000; includeSubDomains'
+    assert https['hsts_bare'] == '', '컨테이너 사이 평문 호출에는 HSTS 가 없다'
+    assert https['healthz_bare_status'] in (200, 503), 'SSL 리디렉트(301)로 튀지 않는다'
+
+
+def test_운영에서는_https_콜백만_등록된다(https):
+    """claude.ai·Cowork 콜백(https)은 등록되고, http 루프백은 거부된다(RFC 9700 §2.1)."""
+    assert https['redirect_schemes'] == ['https']
+    assert https['dcr_https'] == 201
+    assert https['dcr_http_loopback'] == 400
+
+
+def test_구글이_켜지면_로컬_가입만_닫힌다(google):
+    """HUB_LOCAL_LOGIN=1 은 이때 '기존 로컬 계정의 로그인' 만 — 새 계정은 Google 로만 생긴다."""
+    assert google['local_signup_setting'] is False
+    assert google['login_page_has_signup_link'] is False
+    assert google['signup_page_has_form'] is False
+    assert google['local_signup_created'] is False
+    assert google['local_login_status'] == 302
+    assert google['local_login_authenticated'] is True
+    assert google['google_signup_created'] is True
+    assert google['google_signup_status'] == 302
