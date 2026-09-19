@@ -96,3 +96,83 @@ def test_도구함이_비면_동의_대신_안내(client, user, app, catalog):
     )
     assert page.status_code == 200
     assert '도구함이 비어 있습니다' in page.content.decode()
+
+
+def _authorize_post(client, app, scope, **extra):
+    _, challenge = _pkce()
+    form = {
+        'client_id': app.client_id,
+        'response_type': 'code',
+        'redirect_uri': REDIRECT,
+        'scope': scope,
+        'state': 'st',
+        'code_challenge': challenge,
+        'code_challenge_method': 'S256',
+        'allow': 'Authorize',
+        **extra,
+    }
+    response = client.post('/o/authorize/', form)
+    return response, parse_qs(urlparse(response.get('Location', '')).query)
+
+
+def test_좁힌_결과가_비면_기본_스코프로_넓어지지_않는다(client, user, app, catalog):
+    """도구함 밖 스코프만 요청하면 교집합이 빈다. 빈 스코프는 DOT 에서 '기본 스코프(= 카탈로그 전체)' 가 되므로
+    거기서 멈춰야 한다 — 아니면 도구함에 없는 도구까지 실린 토큰이 나온다(H-3 에서 발견)."""
+    from oauth2_provider.models import get_access_token_model, get_grant_model
+
+    ToolboxEntry.objects.create(user=user, tool=catalog['weather'])
+    client.force_login(user)
+    response, query = _authorize_post(client, app, 'tool:kosis')
+    assert response.status_code == 302
+    assert 'code' not in query
+    assert query['error'] == ['access_denied'] and query['state'] == ['st']
+    assert get_grant_model().objects.count() == 0
+    assert get_access_token_model().objects.count() == 0
+
+
+def test_도구함이_빈_사용자가_동의_폼을_직접_보내도_거부(client, user, app, catalog):
+    from oauth2_provider.models import get_grant_model
+
+    client.force_login(user)
+    _, query = _authorize_post(client, app, 'tool:kosis tool:weather')
+    assert 'code' not in query and query['error'] == ['access_denied']
+    assert get_grant_model().objects.count() == 0
+
+
+def test_자동_승인_경로도_도구함으로_좁혀진다(client, user, app, catalog):
+    """approval_prompt=auto — 이전 토큰이 있으면 동의 화면 없이 바로 발급하는 DOT 경로도 같은 관문을 지난다."""
+    from datetime import timedelta
+
+    from django.utils import timezone
+    from oauth2_provider.models import get_access_token_model, get_grant_model
+
+    ToolboxEntry.objects.create(user=user, tool=catalog['weather'])
+    get_access_token_model().objects.create(
+        user=user,
+        application=app,
+        token='earlier',
+        scope='tool:weather',
+        expires=timezone.now() + timedelta(hours=1),
+    )
+    client.force_login(user)
+    _, challenge = _pkce()
+    params = {
+        'client_id': app.client_id,
+        'response_type': 'code',
+        'redirect_uri': REDIRECT,
+        'scope': 'tool:kosis',
+        'state': 'st',
+        'code_challenge': challenge,
+        'code_challenge_method': 'S256',
+        'approval_prompt': 'auto',
+    }
+    response = client.get('/o/authorize/', params)
+    query = parse_qs(urlparse(response.get('Location', '')).query)
+    assert 'code' not in query
+    assert get_grant_model().objects.count() == 0
+
+    params['scope'] = 'tool:kosis tool:weather'
+    response = client.get('/o/authorize/', params)
+    query = parse_qs(urlparse(response['Location']).query)
+    assert 'code' in query, '도구함 안의 스코프는 자동 승인된다'
+    assert get_grant_model().objects.get().scope == 'tool:weather'
