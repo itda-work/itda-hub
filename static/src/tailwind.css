@@ -114,6 +114,20 @@
     @apply border-emerald-300 dark:border-emerald-700 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 dark:hover:bg-emerald-900/60;
   }
 
+  /* ── 해시 링크로 찾아온 절 강조 (#selfhost) ───────────────────────
+     스크립트 없이 `:target` 만으로. 고지 띠의 링크가 여기로 데려오는데, 화면이 길면
+     어디로 왔는지 모른 채 끝난다 — 한 번 번쩍이고 사라지는 테두리가 그 자리를 가리킨다.
+     `prefers-reduced-motion` 에서는 움직임 없이 테두리만 잠시 둔다. */
+  .highlight-target:target {
+    @apply rounded-xl outline outline-2 outline-offset-4 outline-amber-400/80;
+    animation: highlight-fade 2.4s ease-out forwards;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .highlight-target:target {
+      animation: none;
+    }
+  }
+
   /* ── 배지(판정·상태) ─────────────────────────────────────────── */
   .badge {
     @apply inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap;
@@ -132,5 +146,15 @@
   }
   .badge-blue {
     @apply bg-blue-50 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300;
+  }
+}
+
+@keyframes highlight-fade {
+  0%,
+  60% {
+    outline-color: rgb(251 191 36 / 0.85);
+  }
+  100% {
+    outline-color: rgb(251 191 36 / 0);
   }
 }

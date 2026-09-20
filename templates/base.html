@@ -27,8 +27,9 @@
 {# 시험 서비스 고지 — 헤더보다 위, 모든 화면에. 닫는 버튼을 두지 않는다: 한 번 닫으면 #}
 {# 그 브라우저에서 영영 안 보이는데, 도구를 담고 연결하는 순간마다 알아야 할 전제다. #}
 <p class="bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border-b border-amber-200 dark:border-amber-900/60 px-4 py-2 text-center text-xs sm:text-sm" role="status">
-  <strong class="font-semibold">시험 서비스</strong> — 이곳의 도구는 실험적으로 제공되며, <strong class="font-semibold">예고 없이 변경되거나 중단될 수 있습니다.</strong>
-  업무에 계속 쓰시려면 <a href="https://github.com/itda-work/itda-hub" target="_blank" rel="noopener noreferrer" class="underline underline-offset-2 font-semibold hover:no-underline">오픈소스 허브를 사내에 직접 설치</a>하세요.
+  <strong class="font-semibold">시험 서비스</strong> — 이곳의 도구는 실험적으로 제공되며 <strong class="font-semibold">예고 없이 변경·중단될 수 있습니다.</strong>
+  잇다 허브는 <strong class="font-semibold">업무에 맞는 도구를 직접 만들어 붙이는 오픈소스 플랫폼</strong>입니다 —
+  <a href="{% url 'toolbox:home' %}#selfhost" class="underline underline-offset-2 font-semibold hover:no-underline">사내에서 운영하는 법 보기</a>
 </p>
 {% with ns=request.resolver_match.namespace %}
 <header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-gray-100 dark:border-slate-800">
