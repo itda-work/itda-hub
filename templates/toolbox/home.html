@@ -68,10 +68,11 @@
   <div class="card p-5 mt-4">
     <ul class="space-y-2.5 text-sm text-gray-700 dark:text-slate-300">
       <li><strong class="font-semibold text-gray-900 dark:text-white">도구 하나 = 파일 하나.</strong> 어댑터를 쓰고 카탈로그에 한 줄 더하면 그날로 쓸 수 있습니다. 사내 ERP·그룹웨어·사내 DB 도 같은 방식입니다.</li>
+      <li><strong class="font-semibold text-gray-900 dark:text-white">도구 개발은 바이브 코딩으로.</strong> 저장소에 기존 어댑터와 에이전트용 규약(<code class="code-inline">CLAUDE.md</code>)이 함께 있습니다. 코딩 에이전트에게 「이 API 를 도구로 붙여 줘」라고 시키면 초안이 나옵니다 — 인증·권한·궤적은 허브가 이미 맡고 있어, 새로 쓰는 것은 상류 호출과 응답 정리뿐입니다.</li>
       <li><strong class="font-semibold text-gray-900 dark:text-white">연결은 표준 MCP.</strong> claude.ai·Cowork 커스텀 커넥터와 Claude Code 가 같은 주소로 붙습니다. 클라이언트마다 따로 만들 것이 없습니다.</li>
       <li><strong class="font-semibold text-gray-900 dark:text-white">권한은 사람마다 도구함 단위.</strong> 담은 도구만 권한이 되고, 누가 언제 무엇을 불렀는지 궤적에 남습니다.</li>
       <li><strong class="font-semibold text-gray-900 dark:text-white">데이터는 사내에.</strong> 인증키는 암호화해 보관하고, 화면·로그·궤적 어디에도 평문으로 남기지 않습니다.</li>
-      <li><strong class="font-semibold text-gray-900 dark:text-white">설치는 compose 한 벌.</strong> Django(웹·인가 서버) + MCP 서버 + SQLite. 로그인은 Google 또는 사내 계정 중에서 고릅니다.</li>
+      <li><strong class="font-semibold text-gray-900 dark:text-white">서버 한 대와 도메인이면 시작합니다.</strong> compose 한 벌(Django 웹·인가 서버 + MCP 서버 + SQLite)에 리버스 프록시(Caddy)를 얹으면 <strong class="font-semibold">HTTPS 인증서는 자동 발급</strong>됩니다. 별도 DB 서버·메시지 큐가 필요 없고, 이 사이트도 작은 VM 한 대에서 그렇게 돌고 있습니다. 로그인은 Google 또는 사내 계정 중에서 고릅니다.</li>
     </ul>
     <div class="mt-4 flex flex-wrap items-center gap-2">
       <a href="https://github.com/itda-work/itda-hub" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">

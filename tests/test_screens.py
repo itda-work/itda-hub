@@ -86,6 +86,7 @@ def test_도구함_화면_카드와_연결_카드(client, user, catalog):
     assert 'id="mcp-url"' in html and 'data-copy-target="mcp-url"' in html
     assert '원하시는 도구를 손쉽게 개발·운영하시려면' in html, '자체 개발·운영 안내'
     assert 'id="selfhost"' in html and 'highlight-target' in html, '고지 띠의 링크가 찾아오는 자리'
+    assert '서버 한 대와 도메인' in html and '바이브 코딩' in html, '시작 요건과 도구 개발 방법'
     assert 'mailto:dev@itda.work' in html, '도입 문의 경로'
     assert '연결 토큰' not in html and '/toolbox/token/' not in html, (
         '연결 토큰은 화면에 내지 않는다'
