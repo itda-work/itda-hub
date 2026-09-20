@@ -15,7 +15,9 @@
 
 이 파일이 **보장하지 않는 것**: 어댑터가 올바른 상류를 부르는지, 결과가 쓸모 있는지, 그리고 이미 발급된
 토큰이 비공개 전환 때 회수되는지(`apps/toolbox/tokens.py` 의 `sync_scope` 는 도구함 변경 경로에만 있다).
-여기서 보는 것은 **CI 가 심은 시드**다 — 운영 DB 는 admin 수정으로 달라질 수 있고, 그쪽은 #5 의 몫이다.
+여기서 보는 것은 **CI 가 심은 시드**다 — 운영 DB 는 admin 수정으로 달라질 수 있고, 그쪽은
+`manage.py check --deploy`(`apps/catalog/checks.py`, `tests/test_catalog_checks.py`)가
+배포 전에 본다.
 """
 
 import asyncio

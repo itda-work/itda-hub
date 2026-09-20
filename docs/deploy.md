@@ -147,6 +147,24 @@ hub.itda.work {
 | 조용히 둔 것 | `security.W008`(SSL 리디렉트 — Caddy 몫) · `security.W021`(HSTS preload — 등록 도메인 `itda.work` 단위의 결정) | https 일 때만 |
 - `HUB_SETTINGS_ENCRYPTION_KEY` 는 한 번 정하면 불변이다 — 바꾸면 저장된 도구 설정(API 키)을 전부 풀 수 없다. 백업과 같이 보관한다.
 
+### 카탈로그 정합 (`check --deploy`)
+
+**그 DB 를 대상으로** `python manage.py check --deploy --fail-level WARNING` 을 돌린다. 코드의 어댑터와 **지금 그 DB 의 카탈로그 행**이 어긋났는지 본다(`apps/catalog/checks.py`). 위 「보안 설정」과 같은 한 줄이 둘 다 잰다.
+
+| id | 판정 | 사용자가 겪는 것 |
+|---|---|---|
+| `catalog.E001` | 공개(`enabled=True`)인데 어댑터가 없다 | 동의 화면과 토큰에는 스코프가 실리는데 `tools/list` 에 도구가 없다 — 「허용했는데 도구가 안 보인다」 |
+| `catalog.E002` | 어댑터만 있고 카탈로그 행이 없다 | 스코프가 정의되지 않아 아무도 부를 수 없는 죽은 코드 |
+| `catalog.E003` | 자격증명이 필요한 공개 도구의 설정 키가 비었다 | 넣을 칸의 이름을 모르고, 공용 키 환경변수 이름도 만들 수 없다 |
+| `catalog.W001` | 카탈로그를 **읽지 못했다** — DB 에 못 붙었거나 파일이 손상됐다 | 점검이 통과한 것이 아니다. `--fail-level WARNING` 이 여기서 멈춘다 |
+
+`tests/test_catalog_adapter_contract.py` 가 보는 것은 **CI 가 심은 시드**다. 운영 DB 는 그것과 다를 수 있다 — admin 목록에서 `enabled` 를 바로 켤 수 있고(`list_editable`), `seed_catalog` 는 멱등이지만 CATALOG 에 없는 기존 행을 지우지 않는다. 그래서 CI 가 초록인 채로 운영만 어긋날 수 있고, 그 구멍을 이 커맨드가 메운다. **admin 에서 `enabled` 나 설정 키를 고친 뒤에는 매번 돌린다.**
+
+- **`--deploy` 에서만 돈다. 기동과 복구는 무엇도 막지 않는다.** 일반 체크로 등록하면 `BaseCommand.execute` 가 모든 관리 커맨드 앞에서 돌려, 불일치가 생긴 순간 `migrate` 가 종료코드 1 을 내고 `entrypoint.sh` 의 `set -eu` 때문에 hub-web 이 **부팅하지 못한다** — 복구 수단인 `seed_catalog`·`backup_db` 까지 함께. 배포 체크는 그 경로에 실리지 않는다. 대가로 `just check`(`--deploy` 없음)에서는 돌지 않는다.
+- `E002` 를 고치는 방법은 그 DB 에서 `manage.py seed_catalog` 를 돌리는 것이다. 카탈로그가 **통째로** 비어 있으면 복원이 덜 됐는지부터 본다 — 행 0 도 판정 대상이다.
+- **조용히 건너뛰는 것은 「붙었는데 테이블이 없다」 하나뿐이다**(`check` 는 `migrate` 앞에서도 돈다). 나머지는 드러낸다 — 접속 실패는 `catalog.W001`, 붙은 뒤의 조회 실패(`database is locked` — WAL 로 두 프로세스가 같은 파일을 쓴다)는 그대로 터진다. SQLite 손상(`file is not a database`)이 **새 연결의 초기 PRAGMA** 에서 드러나면 접속 실패와 구분되지 않으므로, 둘을 가르는 대신 둘 다 `W001` 로 보이게 한다(붙은 뒤 드러나는 손상은 위대로 터진다). 배포 직전 점검이 DB 장애를 초록으로 덮는 것이 가장 나쁘다.
+- 이 커맨드는 **이미 발급된 토큰을 회수하지 않는다.** `tokens.sync_scope()` 는 도구함 변경 경로에만 있고 admin 의 `enabled` 수정은 그것을 부르지 않는다.
+
 ## 운영 전제
 
 - 공개 HTTPS 도메인 하나(`HUB_BASE_URL`). Claude 는 Anthropic 아웃바운드 대역 `160.79.104.0/21` 에서 허브와 인가 서버 양쪽에 닿아야 한다. WAF 가 이 대역을 막으면 연결이 실패한다.
@@ -164,7 +182,7 @@ hub.itda.work {
 2. **원격 스모크**(공개 HTTPS 배포 뒤)
    - 발견 문서: `uv run --with httpx python -c "import httpx; b='https://hub.itda.work'; print(httpx.get(b+'/.well-known/oauth-authorization-server').json()['issuer']); print(httpx.get(b+'/.well-known/oauth-protected-resource/mcp').json()['resource']); r=httpx.post(b+'/mcp'); print(r.status_code, r.headers.get('www-authenticate'))"` — `issuer` 가 `HUB_BASE_URL`, `resource` 가 `HUB_MCP_URL`, `/mcp` 는 401 과 `Bearer resource_metadata=…`.
    - `https://hub.itda.work/healthz` 가 `{"ok": true, …}`(Caddy 매처로 닫았다면 404, VM 안에서 `docker compose … exec hub-web python -c "…urlopen('http://127.0.0.1:8000/healthz')…"` 는 200). 응답 헤더에 `Strict-Transport-Security: max-age=31536000; includeSubDomains`.
-   - VM 에서 `docker compose … exec -T hub-web python manage.py check --deploy --fail-level WARNING` → `no issues (2 silenced)`.
+   - VM 에서 `docker compose … exec -T hub-web python manage.py check --deploy --fail-level WARNING` → `no issues (2 silenced)`. 보안 설정(위 표)과 **운영 DB 의 카탈로그 정합**(`catalog.E001~E003`)을 한 번에 잰다 — 「카탈로그 정합」 절. admin 에서 도구를 켜고 끈 뒤에는 이 한 줄을 다시 돌린다.
    - `https://hub.itda.work/accounts/signup/` 이 「가입 닫힘」, 로그인 화면에 Google 버튼과 비밀번호 폼(가입 링크 없음).
    - 운영 VM 에서 토큰을 찍고(`docker compose … exec -T hub-web python manage.py issue_token --email <이메일> --tools weather`) 로컬에서 `HUB_MCP_URL=https://hub.itda.work/mcp HUB_TOKEN=<토큰> just smoke`.
    - Google 로그인 한 번(브라우저) — 콜백이 `https://hub.itda.work/accounts/google/login/callback/` 으로 돌아와 도구함에 들어간다.
