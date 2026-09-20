@@ -253,7 +253,11 @@ def test_스코프_백엔드는_사용자_도구함으로_좁혀지지_않는다
 
     인자 없이 부르는 검사만으로는 요청 의존 필터를 잡지 못한다. DOT 는 검증과 기본 범위 계산에서
     **`application` 과 `request` 를 함께** 넘기므로(`oauth2_provider/oauth2_validators.py`), 여기서도
-    실제 Application 을 만들어 같은 모양으로 묻는다 — 도구함이 빈 사용자와 일부만 담은 사용자 둘 다.
+    실제 Application 을 만들어 **같은 `application`·`user`·`client` 속성으로 직접 호출한다** —
+    도구함이 빈 사용자와 일부만 담은 사용자 둘 다.
+
+    OAuthlib 의 `Request` 나 DOT validator 를 지나지는 않는다. 그 속성들을 읽는 회귀는 잡지만
+    `grant_type`·사용자 없는 토큰 단계까지 입증하지는 않는다.
     """
     Application = get_application_model()
     application = Application.objects.create(

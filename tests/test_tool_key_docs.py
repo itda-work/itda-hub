@@ -17,6 +17,9 @@ CONTRIBUTING 의 「새 도구는 카탈로그 선언 + 어댑터 + 테스트 + 
 import re
 from pathlib import Path
 
+import pytest
+from markdown_it import MarkdownIt
+
 from apps.catalog.models import Tool
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -24,62 +27,95 @@ KEY_DOC = ROOT / 'docs' / 'tool-keys.md'
 ENV_SAMPLE = ROOT / '.env.example'
 
 # slug 규칙은 모델을 따른다 — `SlugField` 는 대문자·밑줄도 받는다(`apps/catalog/models.py`).
-ANCHOR = re.compile(r'^ {0,3}<!--\s*tool-key:\s*([-a-zA-Z0-9_]+)\s*-->\s*$')
-HEADING = re.compile(r'^ {0,3}##[ \t]')
-# 펜스는 백틱·틸드 셋 이상이고 들여쓰기는 세 칸까지다(네 칸부터는 펜스가 아니라 들여쓴 코드).
-FENCE = re.compile(r'^ {0,3}(`{3,}|~{3,})(.*)$')
+ANCHOR = re.compile(r'<!--\s*tool-key:\s*([-a-zA-Z0-9_]+)\s*-->')
 
 
 def anchored_sections(text: str) -> dict[str, int]:
     """`<!-- tool-key: slug -->` 앵커 → 그 slug 가 앵커된 횟수.
 
-    코드 펜스 안의 예시(기여자 안내의 견본)는 세지 않는다. 앵커 **바로 뒤에 실제 `##` 절**이 와야
-    한다 — 앵커만 문서 아무 데나 흘려 두면 「절이 있다」 는 말이 거짓이 된다.
+    코드 예시(기여자 안내의 견본)는 세지 않고, 앵커 **바로 뒤에 실제 `##` 절**이 와야 한다 —
+    앵커만 문서 아무 데나 흘려 두면 「절이 있다」 는 말이 거짓이 된다.
 
-    펜스는 열고 닫는 짝을 CommonMark 대로 본다. 여는 줄의 **문자와 길이**를 기억하고, 같은 문자로
-    그만큼 이상 길고 정보 문자열이 없는 줄에서만 닫는다. 백틱만 홀짝으로 세면 `~~~` 예시나 네 겹
-    백틱 안의 세 겹 줄이 문서를 뒤집어, 예시뿐인 문서가 「절이 있다」 로 통과한다.
+    판정을 **CommonMark 파서의 토큰**에 맡긴다. 코드 블록·제목의 경계를 손으로 재구현하면
+    펜스 하나마다 반례가 나온다 — 백틱 홀짝은 `~~~` 예시에 뒤집히고, 문자와 길이를 추적해도
+    ``` ```예시``` ``` 같은 인라인 코드를 여는 펜스로 보거나(실제 절이 코드로 묻힌다) 닫는 줄 뒤의
+    NBSP 를 공백으로 보아 코드 안의 앵커를 세고, 목록 안 펜스는 아예 다르게 닫힌다. 여기서 관심은
+    「렌더링된 문서에 그 절이 있는가」 하나뿐이라, 렌더러가 보는 것을 그대로 본다.
     """
+    tokens = MarkdownIt('commonmark').parse(text)
     found: dict[str, int] = {}
-    lines = text.splitlines()
-    open_fence: tuple[str, int] | None = None
-    for i, line in enumerate(lines):
-        fence = FENCE.match(line)
-        if fence:
-            marker, info = fence.group(1), fence.group(2)
-            char, length = marker[0], len(marker)
-            if open_fence is None:
-                open_fence = (char, length)
-                continue
-            if char == open_fence[0] and length >= open_fence[1] and not info.strip():
-                open_fence = None
+    for i, token in enumerate(tokens):
+        # 앵커는 HTML 주석이라 최상위 html_block 으로만 온다. 코드 블록 안이면 fence·code_block 이다.
+        if token.type != 'html_block':
             continue
-        if open_fence is not None:
-            continue
-        m = ANCHOR.match(line)
+        m = ANCHOR.fullmatch(token.content.strip())
         if not m:
             continue
-        following = next((x for x in lines[i + 1 :] if x.strip()), '')
-        assert HEADING.match(following), (
-            f'{m.group(1)} 앵커 뒤에 절이 없다 — 앵커는 절의 머리에만 둔다: {following[:60]!r}'
+        following = tokens[i + 1] if i + 1 < len(tokens) else None
+        assert following is not None and (following.type, following.tag) == (
+            'heading_open',
+            'h2',
+        ), (
+            f'{m.group(1)} 앵커 뒤에 절이 없다 — 앵커는 `## ` 절의 머리에만 둔다: '
+            f'{following.type if following else "문서 끝"}'
         )
         found[m.group(1)] = found.get(m.group(1), 0) + 1
     return found
 
 
-def test_앵커_파서는_코드_예시를_절로_세지_않는다():
-    """파서가 생긴 이상 파서도 잰다 — 예시가 절로 둔갑하면 문서 검사 전체가 거짓말이 된다."""
-    예시뿐인_문서 = '~~~markdown\n<!-- tool-key: kosis -->\n## 예시\n~~~\n'
-    assert anchored_sections(예시뿐인_문서) == {}, '틸드 펜스 안의 예시를 절로 셌다'
+ANCHOR_CASES = [
+    ('표준 문서', '<!-- tool-key: kosis -->\n## KOSIS (`kosis`)\n\n내용\n', {'kosis': 1}),
+    ('틸드 펜스 예시', '~~~markdown\n<!-- tool-key: kosis -->\n## 예시\n~~~\n', {}),
+    (
+        '네 겹 백틱 안의 세 겹 줄',
+        '````markdown\n```\n<!-- tool-key: kosis -->\n## 예시\n```\n````\n',
+        {},
+    ),
+    (
+        '네 칸 들여쓴 코드 뒤의 진짜 절',
+        '    ```\n    예시\n\n<!-- tool-key: kosis -->\n## 가이드\n',
+        {'kosis': 1},
+    ),
+    (
+        '인라인 코드는 펜스가 아니다 — 뒤의 절은 살아 있다',
+        '```예시```\n\n<!-- tool-key: kosis -->\n## 가이드\n',
+        {'kosis': 1},
+    ),
+    (
+        '인라인 코드 뒤 진짜 펜스 안의 예시',
+        '```예시```\n\n```\n<!-- tool-key: kosis -->\n## 가이드\n```\n',
+        {},
+    ),
+    (
+        '닫는 줄 뒤 NBSP 는 펜스를 닫지 않는다',
+        '~~~markdown\n~~~\u00a0\n<!-- tool-key: kosis -->\n## 예시\n~~~\n',
+        {},
+    ),
+    (
+        '목록 안 펜스 뒤의 진짜 절',
+        '- ```\n  예시\n  ```\n\n<!-- tool-key: kosis -->\n## 가이드\n',
+        {'kosis': 1},
+    ),
+    (
+        '펜스를 닫은 뒤의 진짜 절',
+        '```\n예시\n```\n\n<!-- tool-key: kosis -->\n## 가이드\n',
+        {'kosis': 1},
+    ),
+    (
+        '더 긴 닫기와 뒤따르는 공백·탭',
+        '```\n예시\n```` \t\n\n<!-- tool-key: kosis -->\n## 가이드\n',
+        {'kosis': 1},
+    ),
+]
 
-    네겹_백틱 = '````markdown\n```\n<!-- tool-key: kosis -->\n## 예시\n```\n````\n'
-    assert anchored_sections(네겹_백틱) == {}, '네 겹 백틱 안의 세 겹 줄에 펜스가 열렸다'
 
-    들여쓴_코드 = '    ```\n    예시\n\n<!-- tool-key: kosis -->\n## 진짜 가이드\n'
-    assert anchored_sections(들여쓴_코드) == {'kosis': 1}, '네 칸 들여쓴 줄을 펜스로 봤다'
+@pytest.mark.parametrize('name,text,expected', ANCHOR_CASES, ids=[c[0] for c in ANCHOR_CASES])
+def test_앵커_파서는_렌더링된_절만_센다(name, text, expected):
+    """파서가 생긴 이상 파서도 잰다 — 예시가 절로 둔갑하면 문서 검사 전체가 거짓말이 된다.
 
-    표준_문서 = '<!-- tool-key: kosis -->\n## KOSIS (`kosis`)\n\n내용\n'
-    assert anchored_sections(표준_문서) == {'kosis': 1}
+    거짓 통과(코드 안 예시를 절로 셈)와 거짓 실패(진짜 절을 코드로 봄) 양쪽을 한 표에 둔다.
+    """
+    assert anchored_sections(text) == expected
 
 
 def test_자격증명이_필요한_공개_도구는_발급_가이드_절이_있다(catalog):
