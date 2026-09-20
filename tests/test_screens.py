@@ -85,6 +85,7 @@ def test_도구함_화면_카드와_연결_카드(client, user, catalog):
     assert 'action="/toolbox/add/weather/"' in html and 'aria-label="날씨 담기"' in html
     assert 'id="mcp-url"' in html and 'data-copy-target="mcp-url"' in html
     assert '사내에서 쓰기' in html and '오픈소스' in html, '자체 설치 안내'
+    assert 'mailto:dev@itda.work' in html, '도입 문의 경로'
     assert '연결 토큰' not in html and '/toolbox/token/' not in html, (
         '연결 토큰은 화면에 내지 않는다'
     )

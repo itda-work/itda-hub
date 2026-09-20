@@ -1,6 +1,6 @@
 [project]
 name = "itda-hub"
-version = "0.5.2"
+version = "0.5.3"
 description = "잇다 허브 — 도구함을 골라 담고 한 번의 로그인으로 Claude·Cowork 에 연결하는 오픈소스 MCP 허브 서비스 (Django · django-itda · fastmcp)"
 readme = "README.md"
 license = "MIT"
