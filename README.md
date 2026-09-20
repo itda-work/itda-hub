@@ -52,7 +52,7 @@ just up      # hub-web :8000 · hub-mcp :8080 (127.0.0.1 에만). 포트가 겹�
 
 명령줄로만 하려면: `just token admin@example.com --tools weather,kosis --shared` 가 도구함을 채우고 토큰을 찍는다. `HUB_TOKEN=<토큰> just smoke` 가 진짜 MCP 클라이언트(fastmcp)로 목록·날씨·KOSIS 를 한 번씩 부른다(토큰 없이는 거부되는 것까지 잰다).
 
-KOSIS 는 인증키가 필요하다 — `.env` 의 `SHARED_KOSIS_API_KEY`(관리자 공용) 또는 도구함 설정의 개인 키. 없으면 호출이 `ToolDenied` 로 거부되고 그 사실이 궤적에 남는다.
+KOSIS 는 인증키가 필요하다 — `.env` 의 `SHARED_KOSIS_API_KEY`(관리자 공용) 또는 도구함 설정의 개인 키. 발급 절차는 [docs/tool-keys.md](docs/tool-keys.md). 없으면 호출이 `ToolDenied` 로 거부되고 그 사실이 궤적에 남는다.
 
 ## 호스트에서 직접 (uv)
 
@@ -93,7 +93,7 @@ mcp_server/     별도 프로세스 · fastmcp HTTP · introspection 검증 · �
 scripts/        make_env(.env 생성) · mcp_smoke(MCP 왕복 스모크)
 compose.yml     hub-web + hub-mcp · deploy/entrypoint.sh 가 migrate → seed → bootstrap
 compose.prod.yml 운영 오버레이(포트 미노출 · 워커 1 · 로그 회전 · hub-backup)
-docs/           아키텍처 · 배포 · 강의 가이드
+docs/           아키텍처 · 배포 · 강의 가이드 · 도구 인증키 발급
 ```
 
 ## 문서
@@ -101,4 +101,5 @@ docs/           아키텍처 · 배포 · 강의 가이드
 - [docs/architecture.md](docs/architecture.md) — 두 겹의 OAuth, 연결 토큰, 스코프 = 도구함, 프로세스 경계
 - [docs/deploy.md](docs/deploy.md) — 로컬 compose · 운영 오버레이 · 동거 배포 · 백업 · 검증 절차
 - [docs/lecture-guide.md](docs/lecture-guide.md) — 교육생 연결 가이드(Cowork · Claude Code)
+- [docs/tool-keys.md](docs/tool-keys.md) — 도구별 인증키 발급 절차(KOSIS 등) · 공용 키와 개인 키
 - [CHANGELOG.md](CHANGELOG.md) · [CONTRIBUTING.md](CONTRIBUTING.md) · [SECURITY.md](SECURITY.md)

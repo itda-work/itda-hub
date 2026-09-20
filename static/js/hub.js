@@ -4,7 +4,7 @@
  * 1. 테마 토글(#theme-toggle) — 스킬.잇다 웹사이트 static/js/theme.js 와 같은 계약:
  *    저장 키 'theme', html.dark 클래스 하나, 기본값 light, 다른 탭의 변경(storage 이벤트)을 따른다.
  * 2. 복사 버튼([data-copy-target="<요소 id>"]) — 대상 요소의 textContent 를 클립보드로.
- *    연결 토큰 화면이 쓴다. 토큰은 이미 화면에 있는 값이고 스크립트는 그것을 어디에도 보내지 않는다.
+ *    도구함의 MCP 주소 카드가 쓴다. 스크립트는 화면에 이미 있는 값을 클립보드로만 옮긴다.
  */
 ;(function () {
   'use strict'

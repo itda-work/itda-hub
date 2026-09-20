@@ -2,6 +2,14 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 를 따른다. 과업별 근거·검증은 `docs/reports/` 에 있다.
 
+## [미배포]
+
+### 문서
+
+- `docs/tool-keys.md` 신규 — 도구별 인증키 발급 가이드(KOSIS 절차·오류 코드 대응표·공용 키와 개인 키). 새 도구를 더할 때 채울 항목도 적었다.
+- 0.4.0 에서 없앤 연결 토큰 화면을 아직 가리키던 서술을 정리했다 — `docs/lecture-guide.md`(운영자·교육생 순서를 `issue_token` 의 실제 제약에 맞게 다시 씀), `SECURITY.md`, `scripts/mcp_smoke.py` 의 오류 안내, `apps/toolbox/tokens.py`, `issue_token.py`, `static/js/hub.js`, `CLAUDE.md`·`AGENTS.md`, 궤적 빈 화면 문구.
+- `docs/architecture.md` — django-itda 0.4 가 본문의 `ToolDenied` 를 `forbidden`/`denied` 로 분류하므로 「돌려보낼 조각」 표의 해당 줄을 해결됨으로 바꾸고, 상류 실패의 구조화 기록을 새 후보로 올렸다.
+
 ## [0.4.1] — 2026-09-20
 
 ### 변경

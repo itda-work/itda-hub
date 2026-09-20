@@ -2,7 +2,8 @@
 
 django-oauth-toolkit 의 AccessToken 을 그대로 쓴다(별도 모델 없음). 그래서 MCP 프로세스의 introspection
 검증 경로가 OAuth 토큰과 완전히 같다 — 검증 코드가 두 벌이 되지 않는다. 다른 것은 발급 경로뿐이다:
-동의 화면 대신 도구함 화면의 버튼(또는 `manage.py issue_token`)이 만들고, 스코프는 발급 시점의 도구함이며
+동의 화면 대신 `manage.py issue_token` 커맨드가 만들고(0.4.0 부터 화면 버튼은 없다 — 사용자에게는
+OAuth 커넥터만 노출한다), 스코프는 발급 시점의 도구함이며
 도구함이 바뀌면 따라간다(OAuth 토큰은 다음 갱신 때 좁혀진다).
 
 원문은 발급 순간의 반환값으로만 나간다. 저장은 체크섬뿐이다(RFC 9700 — settings 의

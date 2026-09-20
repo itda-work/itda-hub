@@ -59,4 +59,4 @@ Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에
 | 스코프 ↔ 권한 매핑 | 카탈로그 slug 규약 |
 | 설정 저장소 | `apps/toolbox` |
 | HTTP 브리지 예제 | `mcp_server/__main__.py` |
-| 본문이 올린 `ToolDenied` 의 궤적 분류(exception → forbidden) | 허브는 손대지 않는다 — [django-itda#6](https://github.com/itda-work/django-itda/issues/6) 로 넘겼다. 그때까지 궤적 화면에는 `exception · ToolDenied: …` 로 보인다 |
+| 본문이 올린 `ToolDenied` 의 궤적 분류 | 해결됨 — django-itda 0.4 가 본문의 `ToolDenied` 를 권한 검사 거부와 같은 갈래(`error='forbidden'`/`'denied'`)로 남긴다([django-itda#6](https://github.com/itda-work/django-itda/issues/6)). 허브는 손대지 않는다 |

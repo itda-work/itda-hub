@@ -38,7 +38,7 @@
 {% else %}
 <div class="card p-10 text-center">
   <p class="font-medium">아직 호출이 없습니다.</p>
-  <p class="mt-2 text-sm muted">Claude 에 연결한 뒤 도구를 부르면 여기에 남습니다. <a href="{% url 'toolbox:home' %}" class="link">도구함</a>에서 도구를 담고 연결 토큰을 발급하세요.</p>
+  <p class="mt-2 text-sm muted">Claude 에 연결한 뒤 도구를 부르면 여기에 남습니다. <a href="{% url 'toolbox:home' %}" class="link">도구함</a>에서 도구를 담고 커스텀 커넥터로 연결하세요.</p>
 </div>
 {% endif %}
 {% endblock %}

@@ -32,7 +32,7 @@ async def main() -> int:
     token = os.environ.get('HUB_TOKEN', '')
     if not token:
         print(
-            'HUB_TOKEN 이 비어 있다 — 도구함 화면 또는 `just token <이메일>` 로 발급하라',
+            'HUB_TOKEN 이 비어 있다 — `just token <이메일>` 또는 `manage.py issue_token --email <이메일>` 로 발급하라',
             file=sys.stderr,
         )
         return 2
