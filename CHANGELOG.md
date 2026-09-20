@@ -2,6 +2,13 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 를 따른다. 과업별 근거·검증은 `docs/reports/` 에 있다.
 
+## [0.4.1] — 2026-09-20
+
+### 변경
+
+- **로고.** 자리표시였던 인디고 바탕 「있」 아이콘(`static/img/favicon.svg`)을 지우고, 스킬.잇다(`itda.work`)의 로고
+  `static/img/logo.png` 를 헤더·로그인 화면·파비콘에 쓴다. 워드마크는 「잇다 허브」 그대로.
+
 ## [0.4.0] — 2026-09-20
 
 ### 변경

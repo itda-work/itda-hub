@@ -68,5 +68,5 @@ def test_정적_파일_찾기_경로에_hub_css_가_있다():
     """STATICFILES_DIRS — 이 경로가 빠지면 운영(collectstatic·whitenoise)에서 화면이 CSS 없이 뜬다."""
     from django.contrib.staticfiles import finders
 
-    for path in ('css/hub.css', 'js/theme-boot.js', 'js/hub.js', 'img/favicon.svg'):
+    for path in ('css/hub.css', 'js/theme-boot.js', 'js/hub.js', 'img/logo.png'):
         assert finders.find(path), path
