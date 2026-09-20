@@ -25,6 +25,8 @@ dev = [
     "pytest>=8.3",
     "pytest-django>=4.11",
     "ruff>=0.12",
+    # 도구 키 문서의 앵커가 코드 예시인지 진짜 절인지는 렌더러가 답한다(tests/test_tool_key_docs.py).
+    "markdown-it-py>=3",
 ]
 
 [tool.uv.sources]

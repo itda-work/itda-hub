@@ -32,25 +32,6 @@ def assert_no_key(haystack: str, where: str):
     )
 
 
-@pytest.fixture
-def upstream(monkeypatch):
-    """상류를 MockTransport 로 세운다 — 네트워크를 부르지 않는다.
-
-    어댑터가 `httpx.get` 을 쓰든 공통 레이어를 쓰든 같은 자리를 지나도록 모듈의 `get` 을 갈아끼운다.
-    """
-
-    def install(handler):
-        transport = httpx.MockTransport(handler)
-
-        def fake_get(url, **kwargs):
-            with httpx.Client(transport=transport) as client:
-                return client.get(url, **kwargs)
-
-        monkeypatch.setattr(httpx, 'get', fake_get)
-
-    return install
-
-
 def _kosis_call():
     from mcp_server.tools import kosis
 
