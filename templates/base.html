@@ -23,6 +23,12 @@
 </head>
 <body class="min-h-screen flex flex-col">
 <a href="#main" class="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-3 focus:z-[60] btn btn-primary">본문으로 건너뛰기</a>
+
+{# 시험 서비스 고지 — 헤더보다 위, 모든 화면에. 닫는 버튼을 두지 않는다: 한 번 닫으면 #}
+{# 그 브라우저에서 영영 안 보이는데, 도구를 담고 연결하는 순간마다 알아야 할 전제다. #}
+<p class="bg-amber-50 dark:bg-amber-950/50 text-amber-900 dark:text-amber-200 border-b border-amber-200 dark:border-amber-900/60 px-4 py-2 text-center text-xs sm:text-sm" role="status">
+  <strong class="font-semibold">시험 서비스</strong> — 이곳의 도구는 실험적으로 제공되며, <strong class="font-semibold">예고 없이 변경되거나 중단될 수 있습니다.</strong> 업무에 필수적인 용도로는 사용하지 마세요.
+</p>
 {% with ns=request.resolver_match.namespace %}
 <header class="sticky top-0 z-50 bg-white/90 dark:bg-slate-900/90 backdrop-blur border-b border-gray-100 dark:border-slate-800">
   <div class="max-w-5xl mx-auto px-4 py-3 flex flex-wrap items-center gap-x-6 gap-y-2">

@@ -41,6 +41,8 @@ def _shell(html):
     assert 'id="theme-toggle"' in html
     assert 'aria-label="주 메뉴"' in html
     assert 'Powered by' in html and 'https://itda.work' in html
+    # 시험 서비스 고지는 모든 화면에 있어야 한다 — 도구를 담고 연결하는 순간마다 알아야 할 전제다.
+    assert '시험 서비스' in html and '중단될 수 있습니다' in html
 
 
 def test_로그인_화면_로컬_전용(client, db):
