@@ -43,6 +43,8 @@ def _shell(html):
     assert 'Powered by' in html and 'https://itda.work' in html
     # 시험 서비스 고지는 모든 화면에 있어야 한다 — 도구를 담고 연결하는 순간마다 알아야 할 전제다.
     assert '시험 서비스' in html and '중단될 수 있습니다' in html
+    # 계속 쓰려면 직접 설치하는 길이 있다는 것도 함께 — 고지만 하고 대안을 안 주면 막다른 길이다.
+    assert 'github.com/itda-work/itda-hub' in html
 
 
 def test_로그인_화면_로컬_전용(client, db):
@@ -82,6 +84,7 @@ def test_도구함_화면_카드와_연결_카드(client, user, catalog):
     assert 'aria-label="KOSIS 국가통계 담김 — 빼기"' in html and 'tool-toggle-on' in html
     assert 'action="/toolbox/add/weather/"' in html and 'aria-label="날씨 담기"' in html
     assert 'id="mcp-url"' in html and 'data-copy-target="mcp-url"' in html
+    assert '사내에서 쓰기' in html and '오픈소스' in html, '자체 설치 안내'
     assert '연결 토큰' not in html and '/toolbox/token/' not in html, (
         '연결 토큰은 화면에 내지 않는다'
     )
