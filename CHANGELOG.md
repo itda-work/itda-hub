@@ -2,7 +2,7 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 를 따른다. 과업별 근거·검증은 `docs/reports/` 에 있다.
 
-## [미배포]
+## [0.5.0] — 2026-09-20
 
 ### 추가
 
