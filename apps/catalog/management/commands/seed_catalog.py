@@ -25,13 +25,38 @@ CATALOG = [
         'description': '좌표 기준 현재 날씨와 오늘 예보. 키 불요.',
     },
     {
+        'slug': 'realty-deals',
+        'name': '부동산 실거래가',
+        'provider': '국토교통부 실거래가(data.go.kr)',
+        'credential': Tool.Credential.SHARED,
+        'setting_key': 'DATA_GO_KR_API_KEY',
+        'order': 12,
+        'enabled': True,
+        'description': (
+            '시군구·계약연월로 아파트 매매·전월세 실거래를 조회한다. '
+            '공공데이터포털 인증키가 필요하며 관리자 공용 키를 쓸 수 있다.'
+        ),
+    },
+    {
+        'slug': 'ecos',
+        'name': '한국은행 경제지표',
+        'provider': '한국은행 ECOS',
+        'credential': Tool.Credential.SHARED,
+        'setting_key': 'ECOS_API_KEY',
+        'order': 14,
+        'enabled': True,
+        'description': '통계표 검색과 시계열 조회. 인증키가 필요하며 관리자 공용 키를 쓸 수 있다.',
+    },
+    {
         'slug': 'fx',
         'name': '환율',
-        'provider': '서울외국환중개',
-        'credential': Tool.Credential.NONE,
+        # 어댑터는 ECOS 의 일별 대원화환율 통계표를 쓴다 — 같은 인증키(`ECOS_API_KEY`)다.
+        'provider': '한국은행 ECOS',
+        'credential': Tool.Credential.SHARED,
+        'setting_key': 'ECOS_API_KEY',
         'order': 20,
-        'enabled': False,
-        'description': '일별·월평균 매매기준율 조회. 어댑터 준비 중 — 공개 전까지 도구함에 담을 수 없다.',
+        'enabled': True,
+        'description': '일별 대원화환율 조회. 한국은행 ECOS 인증키를 쓴다(경제지표 도구와 같은 키).',
     },
     {
         'slug': 'fuel',

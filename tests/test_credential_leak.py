@@ -6,12 +6,18 @@
 URL 을 찍는다.
 
 키는 쿼리스트링에서 **URL 인코딩**되므로 원문 검사만으로는 통과하는데 새는 테스트가 된다.
-아래 `assert_no_key` 가 두 형태를 모두 본다.
+아래 `assert_no_key` 가 세 형태를 모두 본다.
+
+**세 번째 형태가 있는 이유**: ECOS 는 인증키를 쿼리 파라미터가 아니라 **URL 경로 세그먼트**로 받는다.
+안전한 URL 은 경로를 남기므로(버리면 어느 엔드포인트가 실패했는지가 사라진다) 쿼리스트링을 통째로
+버리는 규약만으로는 막히지 않고, 경로 인코딩(`quote(safe='')` — 공백이 `+` 가 아니라 `%20`)이라
+쿼리 인코딩 형태만 보는 검사도 지나간다.
 """
 
 import contextlib
 import logging
 import logging.config
+from urllib.parse import quote
 
 import httpx
 import pytest
@@ -30,12 +36,31 @@ def assert_no_key(haystack: str, where: str):
     assert encoded(FAKE_KEY) not in haystack, (
         f'{where} 에 키가 URL 인코딩 형태로 있다: {haystack[:400]}'
     )
+    assert quote(FAKE_KEY, safe='') not in haystack, (
+        f'{where} 에 키가 경로 인코딩 형태로 있다: {haystack[:400]}'
+    )
 
 
 def _kosis_call():
     from mcp_server.tools import kosis
 
     return kosis.search(FAKE_KEY, '인구', 3)
+
+
+def _ecos_call():
+    """인증키가 **경로**에 실리는 상류 — 쿼리스트링을 버리는 규약이 닿지 않는 자리다."""
+    from mcp_server.tools import ecos
+
+    return ecos.series(FAKE_KEY, '901Y009', 'M', '202601', '202606')
+
+
+def _realty_call():
+    from mcp_server.tools import realty
+
+    return realty.deals(FAKE_KEY, '11680', '202608')
+
+
+UPSTREAM_CALLS = {'kosis': _kosis_call, 'ecos': _ecos_call, 'realty': _realty_call}
 
 
 # --- 궤적 축 -------------------------------------------------------------
@@ -51,17 +76,19 @@ def _kosis_call():
         ('연결 실패', lambda req: (_ for _ in ()).throw(httpx.ConnectError('no route'))),
     ],
 )
-def test_상류_실패의_예외_문자열에_키가_없다(upstream, name, handler):
+@pytest.mark.parametrize('adapter', sorted(UPSTREAM_CALLS), ids=sorted(UPSTREAM_CALLS))
+def test_상류_실패의_예외_문자열에_키가_없다(upstream, name, handler, adapter):
     """어댑터가 올리는 예외는 그대로 `ToolCall.reason` 이 된다(django_itda/tools.py).
 
-    그러므로 예외 문자열에 키가 없어야 궤적에도 없다.
+    그러므로 예외 문자열에 키가 없어야 궤적에도 없다. **어댑터마다 잰다** — 키를 어디에 싣는지가
+    어댑터마다 달라(쿼리스트링 · 경로) 한 어댑터의 통과가 다른 어댑터를 보증하지 않는다.
     """
     upstream(handler)
     try:
-        _kosis_call()
+        UPSTREAM_CALLS[adapter]()
     except Exception as exc:  # noqa: BLE001 — 어떤 예외든 그 문자열을 검사하는 것이 이 테스트다
-        assert_no_key(f'{type(exc).__name__}: {exc}', f'{name} 의 예외 문자열')
-        assert_no_key(repr(exc), f'{name} 의 예외 repr')
+        assert_no_key(f'{type(exc).__name__}: {exc}', f'{adapter} · {name} 의 예외 문자열')
+        assert_no_key(repr(exc), f'{adapter} · {name} 의 예외 repr')
 
 
 def test_궤적에_저장된_사유에_키가_없다(db, user, upstream):
@@ -93,19 +120,21 @@ def test_궤적에_저장된_사유에_키가_없다(db, user, upstream):
 # --- 로그 축 -------------------------------------------------------------
 
 
-def test_성공한_호출의_로그에도_키가_없다(upstream, caplog):
+@pytest.mark.parametrize('adapter', sorted(UPSTREAM_CALLS), ids=sorted(UPSTREAM_CALLS))
+def test_성공한_호출의_로그에도_키가_없다(upstream, caplog, adapter):
     """예외 경로만 막으면 절반이다 — httpx 는 **성공 응답도** INFO 로 URL 을 찍는다."""
     upstream(lambda req: httpx.Response(200, json=[]))
-    with caplog.at_level(logging.DEBUG):
-        _kosis_call()
-    assert_no_key(caplog.text, '성공 호출의 로그')
+    with caplog.at_level(logging.DEBUG), contextlib.suppress(Exception):
+        UPSTREAM_CALLS[adapter]()
+    assert_no_key(caplog.text, f'{adapter} 성공 호출의 로그')
 
 
-def test_실패한_호출의_로그에도_키가_없다(upstream, caplog):
+@pytest.mark.parametrize('adapter', sorted(UPSTREAM_CALLS), ids=sorted(UPSTREAM_CALLS))
+def test_실패한_호출의_로그에도_키가_없다(upstream, caplog, adapter):
     upstream(lambda req: httpx.Response(500, text='boom'))
     with caplog.at_level(logging.DEBUG), contextlib.suppress(Exception):
-        _kosis_call()
-    assert_no_key(caplog.text, '실패 호출의 로그')
+        UPSTREAM_CALLS[adapter]()
+    assert_no_key(caplog.text, f'{adapter} 실패 호출의 로그')
 
 
 def test_httpx_로거는_INFO_를_내지_않는다(settings):

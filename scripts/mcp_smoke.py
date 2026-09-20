@@ -1,9 +1,13 @@
-"""MCP 왕복 스모크 — 연결 토큰으로 진짜 MCP 클라이언트(fastmcp)가 목록·날씨·KOSIS 를 부른다.
+"""MCP 왕복 스모크 — 연결 토큰으로 진짜 MCP 클라이언트(fastmcp)가 도구를 하나씩 부른다.
 
     HUB_TOKEN=<연결 토큰> [HUB_MCP_URL=http://localhost:8080/mcp] python scripts/mcp_smoke.py
 
 판정은 반환 구조로 한다: ① 토큰 없이는 거부 ② 토큰의 스코프만큼 도구가 보인다 ③ 날씨는 current 가 온다
-④ KOSIS 는 ok 이거나(키 있음) 자격증명 거부(ToolError)다 — 둘 다 정상, 예외로 죽는 것만 실패.
+④ 키가 필요한 도구는 ok 이거나(키 있음) 자격증명 거부(ToolError)다 — 둘 다 정상, 예외로 죽는 것만 실패.
+
+**키가 필요한 도구의 라이브 검증이 여기다.** 단위 테스트는 픽스처로 고정한 모양만 재므로 상류가
+실제로 그 모양을 내는지는 이 스모크가 말한다. 보고서는 `docs/reports/H-6.md`.
+
 종료 코드 0 = 통과. 토큰은 환경변수로만 받는다(argv 는 ps 에 보인다).
 """
 
@@ -11,6 +15,8 @@ import asyncio
 import json
 import os
 import sys
+from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
 from fastmcp import Client
 from fastmcp.client.auth import BearerAuth
@@ -41,7 +47,7 @@ async def main() -> int:
         'unauthenticated_rejected': None,
         'tools': [],
         'weather': None,
-        'kosis': None,
+        'calls': {},
     }
 
     try:
@@ -70,16 +76,37 @@ async def main() -> int:
     return 0 if ok else 1
 
 
+def _probes():
+    """도구마다 한 번 부를 인자. 날짜는 오늘에서 뒤로 잡는다 — 상류가 아직 안 낸 달을 찍으면
+    「키 문제」와 「데이터 없음」이 섞인다. 실거래가는 공개가 늦어 두 달 전을 본다."""
+    today = datetime.now(ZoneInfo('Asia/Seoul')).date()  # 상류가 모두 KST 기준이다
+    두달전 = (today.replace(day=1) - timedelta(days=62)).strftime('%Y%m')
+    올해 = today.strftime('%Y')
+    return {
+        'kosis_search': {'keyword': '인구', 'count': 3},
+        'realty_deals': {'lawd_cd': '11680', 'deal_ymd': 두달전, 'count': 3},
+        'ecos_stats': {'keyword': '소비자물가', 'count': 3},
+        'fx_rate': {
+            'start': f'{올해}0102',
+            'end': f'{올해}0131',
+            'currency': '미국달러',
+            'count': 5,
+        },
+    }
+
+
 async def _call_tools(client, report):
     if 'weather_now' in report['tools']:
         r = await client.call_tool('weather_now', {'latitude': 37.5665, 'longitude': 126.978})
         report['weather'] = _payload(r)
-    if 'kosis_search' in report['tools']:
+    for name, args in _probes().items():
+        if name not in report['tools']:
+            continue
         try:
-            r = await client.call_tool('kosis_search', {'keyword': '인구', 'count': 3})
-            report['kosis'] = _payload(r)
+            report['calls'][name] = _payload(await client.call_tool(name, args))
         except ToolError as exc:
-            report['kosis'] = {'denied': str(exc)}
+            # 키가 없으면 여기로 온다 — 거부도 정상 경로다(그 사실이 궤적에 남는 것이 계약이다).
+            report['calls'][name] = {'denied': str(exc)}
 
 
 if __name__ == '__main__':

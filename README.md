@@ -52,7 +52,20 @@ just up      # hub-web :8000 · hub-mcp :8080 (127.0.0.1 에만). 포트가 겹�
 
 명령줄로만 하려면: `just token admin@example.com --tools weather,kosis --shared` 가 도구함을 채우고 토큰을 찍는다. `HUB_TOKEN=<토큰> just smoke` 가 진짜 MCP 클라이언트(fastmcp)로 목록·날씨·KOSIS 를 한 번씩 부른다(토큰 없이는 거부되는 것까지 잰다).
 
-KOSIS 는 인증키가 필요하다 — `.env` 의 `SHARED_KOSIS_API_KEY`(관리자 공용) 또는 도구함 설정의 개인 키. 발급 절차는 [docs/tool-keys.md](docs/tool-keys.md). 없으면 호출이 `ToolDenied` 로 거부되고 그 사실이 궤적에 남는다.
+KOSIS·부동산 실거래가·경제지표·환율은 인증키가 필요하다 — 아래 「도구」 표를 본다.
+
+## 도구
+
+| 도구(slug) | MCP 이름 | 하는 일 | 출처 | 인증키 |
+|---|---|---|---|---|
+| KOSIS 국가통계 (`kosis`) | `kosis_search` | 통계표 검색 — 기관·표 ID·표 이름 | 국가데이터처 KOSIS | `KOSIS_API_KEY` |
+| 부동산 실거래가 (`realty-deals`) | `realty_deals` | 시군구·계약연월의 아파트 매매·전월세 실거래 | 국토교통부(data.go.kr) | `DATA_GO_KR_API_KEY` |
+| 한국은행 경제지표 (`ecos`) | `ecos_stats` | 통계표 검색과 시계열 조회 | 한국은행 ECOS | `ECOS_API_KEY` |
+| 환율 (`fx`) | `fx_rate` | 일별 대원화환율 | 한국은행 ECOS | `ECOS_API_KEY`(경제지표와 같은 키) |
+| 날씨 (`weather`) | `weather_now` | 좌표의 현재 날씨와 오늘 예보 | Open-Meteo | 불요 |
+| 유가 (`fuel`) | — | 어댑터 준비 중 — 비공개 | 오피넷 | 미정 |
+
+키가 필요한 도구는 `.env` 의 `SHARED_<설정 키>`(관리자 공용) 또는 도구함 설정의 개인 키로 연다. 발급 절차는 [docs/tool-keys.md](docs/tool-keys.md). 키가 없으면 호출이 `ToolDenied` 로 거부되고 **그 사실이 궤적에 남는다.**
 
 ## 호스트에서 직접 (uv)
 
@@ -70,7 +83,7 @@ just check               # ruff · manage.py check --fail-level WARNING · 마�
 ## v1 범위
 
 - 로그인: Google(django-allauth, 자격이 있을 때만 켜짐) · 이메일+비밀번호(`HUB_LOCAL_LOGIN`, 로컬 기본값). Google 이 켜지면 새 계정은 Google 로만 — 비밀번호는 기존 계정(비상용 관리자)의 로그인만.
-- 카탈로그 4종: KOSIS 통계 검색, 날씨(공개), 환율·유가(어댑터 준비 중 — 비공개). 전부 HTTPS GET, 읽기 전용.
+- 카탈로그 6종(아래 「도구」). 전부 HTTPS GET, 읽기 전용.
 - 도구함, 도구별 설정(암호화 저장), 관리자 공용 키.
 - 연결 방식 둘: OAuth 인가 서버(CIMD 우선, DCR 병행, PKCE S256 · RFC 9700 — implicit·password·plain 거부, RFC 9207 `iss`, refresh 재사용 탐지, 운영은 https 콜백만) · 연결 토큰(`issue_token` 커맨드 전용 — 화면 없음, 30일, 사용자당 하나).
 - 요청 단위 도구 목록 필터(스코프), 궤적 화면, 관리자 열람.

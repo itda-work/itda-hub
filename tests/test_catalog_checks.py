@@ -54,16 +54,16 @@ def test_시드_그대로면_아무_판정도_나오지_않는다(catalog):
 def test_어댑터가_없는_도구를_DB_에서_공개로_켜면_ERROR_다(catalog):
     """운영에서 실제로 일어나는 경로다 — admin 목록의 `list_editable` 로 `enabled` 를 켠다.
 
-    시드는 `fx` 를 「어댑터 준비 중」이라 비공개로 둔다(`seed_catalog.py`). 소스는 그대로인 채
+    시드는 `fuel` 을 「어댑터 준비 중」이라 비공개로 둔다(`seed_catalog.py`). 소스는 그대로인 채
     **DB 만** 켜지므로 계약 테스트는 초록이다. 그 구멍을 이 체크가 메운다.
     """
     assert 판정() == [], '시드 상태부터 빨갛다면 아래 판정이 무엇을 잡았는지 알 수 없다'
 
-    Tool.objects.filter(slug='fx').update(enabled=True)
+    Tool.objects.filter(slug='fuel').update(enabled=True)
 
     messages = 메시지()
     assert [m.id for m in messages] == ['catalog.E001']
-    assert 'tool:fx' in messages[0].msg, '어느 도구인지 말하지 않으면 운영자가 고칠 곳을 모른다'
+    assert 'tool:fuel' in messages[0].msg, '어느 도구인지 말하지 않으면 운영자가 고칠 곳을 모른다'
     assert isinstance(messages[0], Error), '경고로 내면 --fail-level WARNING 없이는 배포가 지나간다'
 
 
@@ -181,11 +181,11 @@ def test_불일치_상태에서도_복구_커맨드가_막히지_않는다(catal
     바로 그 커맨드다. `migrate` 도 같이 죽고, `entrypoint.sh` 는 `set -eu` 라 컨테이너가 부팅하지
     못한다. `skip_checks=False` 로 CLI 와 같은 조건을 만든다.
     """
-    Tool.objects.filter(slug='fx').update(enabled=True)
+    Tool.objects.filter(slug='fuel').update(enabled=True)
 
     call_command('seed_catalog', verbosity=0, skip_checks=False)
 
-    assert Tool.objects.get(slug='fx').enabled is False, '시드가 불일치를 되돌리지 못했다'
+    assert Tool.objects.get(slug='fuel').enabled is False, '시드가 불일치를 되돌리지 못했다'
 
 
 def test_deploy_없는_check_는_판정하지_않는다(catalog):
@@ -193,7 +193,7 @@ def test_deploy_없는_check_는_판정하지_않는다(catalog):
 
     `just check` 의 `manage.py check --fail-level WARNING` 이 기존 그대로 통과한다는 뜻이기도 하다.
     """
-    Tool.objects.filter(slug='fx').update(enabled=True)
+    Tool.objects.filter(slug='fuel').update(enabled=True)
 
     call_command('check', fail_level='WARNING')
 
@@ -224,6 +224,6 @@ def test_deploy_점검은_판정한다(catalog):
     """함수를 직접 부르는 것과 커맨드가 그것을 돌리는 것은 다르다 — 등록까지 지난 경로를 한 번 잰다."""
     call_command('check', deploy=True)  # 시드 상태 — 통과한다
 
-    Tool.objects.filter(slug='fx').update(enabled=True)
+    Tool.objects.filter(slug='fuel').update(enabled=True)
     with pytest.raises(SystemCheckError, match='catalog.E001'):
         call_command('check', deploy=True)

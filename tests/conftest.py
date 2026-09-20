@@ -13,7 +13,7 @@ def user(db, django_user_model):
 
 @pytest.fixture
 def catalog(db):
-    """v1 카탈로그를 심는다 — 공개 kosis·weather, 비공개 fx·fuel."""
+    """v1 카탈로그를 심는다 — 공개 kosis·realty-deals·ecos·fx·weather, 비공개 fuel."""
     from django.core.management import call_command
 
     from apps.catalog.models import Tool

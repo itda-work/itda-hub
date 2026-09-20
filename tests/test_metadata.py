@@ -18,13 +18,23 @@ def test_인가_서버_메타데이터(client, catalog, settings):
     )
     assert doc['client_id_metadata_document_supported'] is True
     assert doc['registration_endpoint'].endswith('/o/register/')
-    assert doc['scopes_supported'] == ['tool:kosis', 'tool:weather'], (
-        '비공개 도구는 광고하지 않는다'
-    )
+    assert sorted(doc['scopes_supported']) == [
+        'tool:ecos',
+        'tool:fx',
+        'tool:kosis',
+        'tool:realty-deals',
+        'tool:weather',
+    ], '비공개 도구(fuel)는 광고하지 않는다'
 
 
 def test_보호_리소스_메타데이터(client, catalog, settings):
     doc = client.get('/.well-known/oauth-protected-resource/mcp').json()
     assert doc['resource'] == settings.HUB_MCP_URL
     assert doc['authorization_servers'] == [settings.HUB_BASE_URL]
-    assert doc['scopes_supported'] == ['tool:kosis', 'tool:weather']
+    assert sorted(doc['scopes_supported']) == [
+        'tool:ecos',
+        'tool:fx',
+        'tool:kosis',
+        'tool:realty-deals',
+        'tool:weather',
+    ]
