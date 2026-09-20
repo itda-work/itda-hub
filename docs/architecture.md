@@ -20,7 +20,8 @@ fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Goog
 
 - 카탈로그의 도구 하나 = 스코프 하나 `tool:<slug>` (`apps/catalog/models.py`).
 - 사용자가 담은 도구 = 그 사용자에게 허용되는 스코프 (`apps/toolbox/models.py: granted_scopes`).
-- DOT 스코프 백엔드 `apps/oauth/scopes.py` 가 동의 화면·토큰 발급을 그 목록으로 상한한다.
+- **유효한 스코프는 공개 카탈로그 전체**다 — DOT 스코프 백엔드 `apps/oauth/scopes.py` 가 `enabled=True` 인 도구를 모두 통과시킨다(비공개 도구는 스코프가 아니다). 여기서 도구함으로 좁히면 메타데이터에 광고된 전체 스코프를 요청하는 Claude 가 `invalid_scope` 로 거절되고, 사용자 세션이 없는 토큰 엔드포인트에서도 검증이 깨진다.
+- **이 사용자에게 실제로 주는 범위는 인가 뷰**가 정한다 — `apps.oauth.views.ToolboxAuthorizationView` 가 요청 스코프와 도구함의 교집합을 내고, 교집합이 비면 발급을 거부한다. 동의 화면과 토큰에는 그 결과만 실린다.
 - MCP 서버는 도구마다 `auth=require_scopes('tool:<slug>')`. 스코프 없는 도구는 `tools/list` 에서 빠지고 호출도 거부된다.
 
 ## 프로세스 경계
