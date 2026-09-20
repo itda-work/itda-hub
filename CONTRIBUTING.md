@@ -9,7 +9,8 @@
 - 도구 어댑터가 스킬.잇다 스킬팩(Apache-2.0)의 코드를 가져올 때는 그 파일의 라이선스 헤더와 `NOTICE` 를 유지한다.
 - 도구는 기본 읽기 전용. 쓰기 도구는 별도 스코프와 승인 절차 없이는 추가하지 않는다.
 - 판정은 채널로 낸다. 성공/실패를 문장으로 추론하지 않는다.
-- 새 도구는 카탈로그 선언 + 어댑터 + 테스트 + 도구 문서 한 장이 한 묶음이다.
+- 새 도구는 카탈로그 선언 + 어댑터 + 테스트 + 도구 문서 한 장이 한 묶음이다. 자격증명이 필요하면 `docs/tool-keys.md` 에 발급 절차 한 절과 `.env.example` 의 `SHARED_*` 항목을 함께 더한다.
+- **어댑터는 `raise_for_status()` 를 쓰지 않는다.** httpx 예외 문자열에는 요청 URL 이 통째로 실리고 그것이 궤적(`ToolCall.reason`)에 저장된다 — 키를 쿼리스트링으로 받는 상류는 그대로 샌다. `mcp_server/tools/safe.py` 의 `check(response, source)` 를 쓴다. 상류 응답 본문을 결과에 실을 때는 `safe.redact(text, secret)` 로 반사된 비밀을 지운다.
 - 화면: 템플릿은 Tailwind 유틸리티 클래스로 쓰고 `just css` 로 `static/css/hub.css` 를 다시 빌드해 함께 커밋한다(처음 한 번 `bun install`). CI 의 css 잡이 커밋본과 빌드 결과를 비교한다. 인라인 `<style>`·`style=`·인라인 `<script>`·`on*=` 속성은 쓰지 않는다 — 스크립트는 `static/js/` 파일로(`tests/test_templates_static.py`).
 
 ## 작업 흐름

@@ -46,7 +46,9 @@ Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에
 
 ## 자격증명
 
-도구 설정 값은 Fernet 으로 암호화해 저장한다(`apps/toolbox/crypto.py`). 값은 도구를 부르는 순간 `mcp_server/tools/credentials.py` 가 풀어 어댑터에 넘기고, 도구 인자에는 실리지 않으므로 궤적에도 남지 않는다. 관리자 공용 키는 환경변수 `SHARED_<KEY>` 로만 존재한다.
+도구 설정 값은 Fernet 으로 암호화해 저장한다(`apps/toolbox/crypto.py`). 값은 도구를 부르는 순간 `mcp_server/tools/credentials.py` 가 풀어 어댑터에 넘기고, 도구 인자에는 실리지 않으므로 궤적의 인자 칸에도 남지 않는다. 관리자 공용 키는 환경변수 `SHARED_<KEY>` 로만 존재한다.
+
+**인자 칸만으로는 충분하지 않다.** 상류가 HTTP 오류를 내면 httpx 예외 문자열에 요청 URL 이 통째로 실리고 그것이 `ToolCall.reason` 에 저장되므로, 쿼리스트링으로 키를 받는 API(KOSIS)는 그 경로로 샜다. 그래서 어댑터는 `raise_for_status()` 를 쓰지 않는다 — `mcp_server/tools/safe.py` 의 `check()` 가 **쿼리스트링을 버리고** 스킴·호스트·경로만 남긴 `UpstreamError` 로 바꾸고(원본 예외는 `from None` 으로 체인에서 끊는다), 상류가 오류 문장에 키를 되돌려주는 경우는 `redact()` 가 지운다. 로그 쪽은 `httpx`·`httpcore` 로거를 WARNING 으로 묶어 닫는다(`hub/settings.py: LOGGING`) — httpx 는 INFO 에서 **성공 호출도** URL 을 찍기 때문이다. 회귀 테스트는 `tests/test_credential_leak.py` 가 원문과 URL 인코딩 두 형태로 잰다.
 
 ## django-itda 에 돌려보낼 조각
 
@@ -60,3 +62,4 @@ Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에
 | 설정 저장소 | `apps/toolbox` |
 | HTTP 브리지 예제 | `mcp_server/__main__.py` |
 | 본문이 올린 `ToolDenied` 의 궤적 분류 | 해결됨 — django-itda 0.4 가 본문의 `ToolDenied` 를 권한 검사 거부와 같은 갈래(`error='forbidden'`/`'denied'`)로 남긴다([django-itda#6](https://github.com/itda-work/django-itda/issues/6)). 허브는 손대지 않는다 |
+| 상류 HTTP 실패의 구조화 기록 | 없다 — 상류 장애가 `error='exception'` 으로 남아 허브 고장과 섞인다([#3](https://github.com/itda-work/itda-hub/issues/3)). 비밀 누출은 `mcp_server/tools/safe.py` 로 막았지만(#4), 실패 **분류**를 `ToolCall` 에 담을 자리는 여전히 django-itda 에 없다 — 범용 조각이므로 그쪽에 제안할 후보 |

@@ -250,6 +250,13 @@ LOGGING = {
     'disable_existing_loggers': False,
     'handlers': {'console': {'class': 'logging.StreamHandler'}},
     'root': {'handlers': ['console'], 'level': env('DJANGO_LOG_LEVEL', 'INFO')},
+    # httpx 는 INFO 에서 **요청 URL 을 통째로** 찍는다. 도구 어댑터는 인증키를 쿼리스트링으로 보내므로
+    # (KOSIS 등) 루트가 INFO 인 채로 두면 성공 호출마다 키가 로그에 남는다 — #4. 상류 호출의 관측은
+    # 궤적(ToolCall)이 맡는다. 로그는 경고 이상만 낸다.
+    'loggers': {
+        'httpx': {'level': 'WARNING'},
+        'httpcore': {'level': 'WARNING'},
+    },
 }
 
 if HUB_HTTPS:

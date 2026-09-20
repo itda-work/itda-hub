@@ -4,6 +4,15 @@
 
 ## [미배포]
 
+### 보안
+
+- **상류 HTTP 오류로 API 인증키가 새던 경로를 닫았다**([#4](https://github.com/itda-work/itda-hub/issues/4)). httpx 의 `raise_for_status()` 가 만드는 예외 문자열에는 요청 URL 이 통째로 실리고, django-itda 가 그것을 `ToolCall.reason` 에 저장한다 — KOSIS 처럼 인증키를 쿼리스트링으로 받는 상류는 키가 궤적 DB·궤적 화면·admin 검색에 평문으로 남았다. 게다가 httpx 는 INFO 레벨에서 **성공 호출마다** 요청 URL 을 찍는데 루트 로거가 INFO 였다.
+  - 어댑터는 `raise_for_status()` 를 쓰지 않는다. 새 `mcp_server/tools/safe.py` 의 `check()` 가 **쿼리스트링을 버리고** 스킴·호스트·경로만 남긴 `UpstreamError` 로 바꾼다. 원본 예외는 `from None` 으로 체인에서 끊는다 — 남겨 두면 traceback 을 찍는 곳에서 URL 이 다시 드러난다.
+  - 「어느 파라미터가 비밀인가」를 목록으로 관리하지 않는다. 쿼리스트링을 통째로 버려 기본을 안전한 쪽에 둔다 — 목록 방식은 새 도구가 목록 갱신을 잊는 순간 다시 샌다.
+  - 상류가 오류 문장에 키를 되돌려주는 경우는 `safe.redact()` 가 지운다(KOSIS `errMsg`).
+  - `httpx`·`httpcore` 로거를 WARNING 으로 묶었다(`hub/settings.py: LOGGING`). 상류 호출의 관측은 궤적이 맡는다.
+  - 회귀 테스트 `tests/test_credential_leak.py` — 키를 **원문과 URL 인코딩 두 형태로** 검사한다(`+`·`/`·`=` 가 `%2B`·`%2F`·`%3D` 가 되므로 원문 검사만으로는 통과하는데 새는 테스트가 된다). 궤적 `reason`·`arguments` 와 **성공·실패 양쪽 로그**를 본다.
+
 ### 문서
 
 - `docs/tool-keys.md` 신규 — 도구별 인증키 발급 가이드(KOSIS 절차·오류 코드 대응표·공용 키와 개인 키). 새 도구를 더할 때 채울 항목도 적었다.

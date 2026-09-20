@@ -2,7 +2,10 @@
 
 import httpx
 
+from . import safe
+
 URL = 'https://api.open-meteo.com/v1/forecast'
+SOURCE = 'open-meteo.com'
 
 
 def now(latitude: float, longitude: float) -> dict:
@@ -15,10 +18,11 @@ def now(latitude: float, longitude: float) -> dict:
         'timezone': 'Asia/Seoul',
     }
     r = httpx.get(URL, params=params, timeout=10.0)
-    r.raise_for_status()
+    # 이 도구에는 키가 없지만 같은 규약을 쓴다 — 예외 문자열에 쿼리스트링을 싣지 않는다.
+    safe.check(r, SOURCE)
     data = r.json()
     return {
-        'source': 'open-meteo.com',
+        'source': SOURCE,
         'retrieved_at': data.get('current', {}).get('time'),
         'current': data.get('current'),
         'today': {
