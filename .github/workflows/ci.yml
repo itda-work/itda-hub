@@ -2,10 +2,9 @@
 # 라이브 스모크(just up → just smoke)와 커스텀 커넥터 OAuth 왕복은 여기서 하지 않는다(docs/deploy.md 「검증 절차」).
 name: CI
 
+# GitHub Actions 사용을 최소화한다 — 평소 검증은 로컬 `just check` 로 하고, 이 워크플로는 필요할 때만 수동 실행한다.
 on:
-  push:
-    branches: [main]
-  pull_request:
+  workflow_dispatch:
 
 permissions:
   contents: read
