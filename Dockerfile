@@ -6,8 +6,6 @@ FROM ghcr.io/astral-sh/uv:${UV_VERSION} AS uv
 
 FROM ${PYTHON_IMAGE} AS builder
 ENV UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy UV_PROJECT_ENVIRONMENT=/app/.venv
-# django-itda 는 git 소스라 빌드 단계에만 git 이 필요하다.
-RUN apt-get update && apt-get install -y --no-install-recommends git && rm -rf /var/lib/apt/lists/*
 COPY --from=uv /uv /bin/uv
 WORKDIR /app
 COPY pyproject.toml uv.lock ./

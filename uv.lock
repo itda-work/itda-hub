@@ -386,9 +386,13 @@ socialaccount = [
 [[package]]
 name = "django-itda"
 version = "0.4.0"
-source = { git = "https://github.com/itda-work/django-itda?tag=v0.4.0#f6992872c0c132dbcb549d53ff54c4370a4b0c31" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/1b/b1/0b85faf2a929349655b861d1c6134bd8b182cb22ce7373f8e7991001bef0/django_itda-0.4.0.tar.gz", hash = "sha256:c1445719125583e4edbd39bed1acaee544ef4386915636039cc7d964a28b0430", size = 20875, upload-time = "2026-09-30T09:59:33.821Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/80/99/6b7f5288e620666bef6571c051e949e6af9a247bb90bc1deeb0f13cbaaef/django_itda-0.4.0-py3-none-any.whl", hash = "sha256:e5f64092dddc1db4d7433ddb102932c1994e4d0c170620098e92f92d66834c42", size = 30179, upload-time = "2026-09-30T09:59:32.516Z" },
 ]
 
 [[package]]
@@ -674,7 +678,7 @@ requires-dist = [
     { name = "cryptography", specifier = ">=45" },
     { name = "django", specifier = ">=6.1,<6.2" },
     { name = "django-allauth", extras = ["socialaccount"], specifier = ">=65.19" },
-    { name = "django-itda", git = "https://github.com/itda-work/django-itda?tag=v0.4.0" },
+    { name = "django-itda", specifier = ">=0.4.0" },
     { name = "django-oauth-toolkit", specifier = ">=3.4.1,<4" },
     { name = "fastmcp", specifier = ">=4,<5" },
     { name = "gunicorn", specifier = ">=23" },

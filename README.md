@@ -2,9 +2,9 @@
 
 > 도구를 골라 **도구함**에 담고, 한 번의 로그인으로 Claude·Cowork·Claude Code 에 연결하는 오픈소스 MCP 허브.
 > 사내 도구 카탈로그 · 사용자별 도구함 · 자격증명 금고 · 궤적(감사) 을 Django 위에 세운다.
-> 판정과 궤적은 [django-itda](https://github.com/itda-work/django-itda) 가 맡고, 이 저장소는 그 첫 외부 소비자다.
+> 판정과 궤적은 [django-itda](https://pypi.org/project/django-itda/) 가 맡고, 이 저장소는 그 첫 외부 소비자다.
 
-- 지원 버전: **Python 3.14 · Django 6.1** · django-itda v0.4.0(태그 고정) · django-allauth 65 · django-oauth-toolkit 3.4 · fastmcp 4. 조직 정책 "항상 최신 안정판" — pytest 는 폐기 경고를 실패로 본다.
+- 지원 버전: **Python 3.14 · Django 6.1** · django-itda 0.4.0(PyPI) · django-allauth 65 · django-oauth-toolkit 3.4 · fastmcp 4. 조직 정책 "항상 최신 안정판" — pytest 는 폐기 경고를 실패로 본다.
 - 상태(2026-09-20): **로컬 docker compose 에서 끝까지 돈다** — 로그인 → 도구함 → 연결 토큰 → MCP 클라이언트가 스코프대로 도구를 보고 부른다 → 궤적. 커스텀 커넥터(OAuth) 왕복은 공개 HTTPS 배포 뒤 스파이크로 남아 있다([#1](https://github.com/itda-work/itda-hub/issues/1)).
 - 운영 주소(예정): `https://hub.itda.work` · MCP 엔드포인트 `https://hub.itda.work/mcp`
 - 라이선스: MIT. 도구 어댑터가 [스킬.잇다 스킬팩](https://github.com/itda-skills)의 코드를 가져오면 그 파일은 Apache-2.0 헤더와 NOTICE 를 유지한다.

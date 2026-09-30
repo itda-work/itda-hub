@@ -29,9 +29,6 @@ dev = [
     "markdown-it-py>=3",
 ]
 
-[tool.uv.sources]
-django-itda = { git = "https://github.com/itda-work/django-itda", tag = "v0.4.0" }
-
 [tool.pytest.ini_options]
 DJANGO_SETTINGS_MODULE = "tests.settings"
 testpaths = ["tests"]
