@@ -140,7 +140,7 @@ hub.itda.work {
 | 쿼리스트링 토큰 거부 | `COMPLIANT_BCP_RFC9700_ACCESS_TOKEN_TRANSPORT` | 토큰은 `Authorization` 헤더로만. introspection(POST 본문)은 무관 |
 | RFC 9207 `iss` | `COMPLIANT_BCP_RFC9700_AUTHZ_RESPONSE_ISS` | 인가 응답 리디렉트에 `iss=HUB_BASE_URL` |
 | refresh 재사용 탐지 | `REFRESH_TOKEN_REUSE_PROTECTION` | 회전된 옛 refresh 가 다시 오면 계열을 통째로 폐기 |
-| 운영은 https 콜백만 | `ALLOWED_REDIRECT_URI_SCHEMES=['https']`(로컬은 http 도) | claude.ai·Cowork 콜백은 `https://claude.ai/api/mcp/auth_callback`. 대가: 네이티브 앱의 http 루프백 콜백(RFC 8252)은 운영에서 등록되지 않는다 — Claude Code 는 연결 토큰으로 붙으므로 무관 |
+| 운영은 https 콜백 + loopback http 만 | `ALLOWED_REDIRECT_URI_SCHEMES=['https']`(로컬은 http 도) · `ALLOW_LOCALHOST_LOOPBACK` · `apps/oauth/redirects.py` | claude.ai·Cowork·ChatGPT 웹 콜백은 https. 네이티브 앱(Codex 앱·Claude Code)의 http 콜백은 **redirect 가 모두 loopback 호스트(`127.0.0.1`·`::1`·`localhost`)인 앱만** 등록되고 포트는 따지지 않는다(RFC 8252 §7.3). 그 밖의 http 는 거부 — 전역 설정이 https 뿐이라 E003 은 조용하다(#7) |
 | 토큰 원문 미저장 | `COMPLIANT_BCP_RFC9700_TOKEN_STORAGE` | 체크섬만(기존) |
 | HSTS | `SECURE_HSTS_SECONDS`(기본 1년) · `INCLUDE_SUBDOMAINS` | https 로 본 요청(프록시 헤더)에만 붙는다. includeSubDomains 는 `*.hub.itda.work` 만 덮는다 |
 | 쿠키 Secure | `SESSION_COOKIE_SECURE` · `CSRF_COOKIE_SECURE` | 기존 |

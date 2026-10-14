@@ -2,6 +2,29 @@
 
 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.1.0/) 를 따른다. 과업별 근거·검증은 `docs/reports/` 에 있다.
 
+## [0.5.6] — 2026-10-14
+
+### 수정
+
+- **ChatGPT 웹 커넥터가 CIMD 로 연결된다(#7).** `CIMD_ALLOWED_HOSTS` 에 `chatgpt.com` 을 더했다. ChatGPT 의
+  클라이언트 메타데이터 문서(`https://chatgpt.com/oauth/client.json`)는 단수 `token_endpoint_auth_method` 가
+  `private_key_jwt` 라 DOT 3.4.1 이 「CIMD 클라이언트는 공개여야 한다」 로 거부했다. 같은 문서의
+  `token_endpoint_auth_methods_supported` 에 `none` 이 있고, ChatGPT 는 이 목록과 허브 메타데이터의 교집합에서
+  방식을 고르므로 실제 토큰 교환은 `none`(PKCE)이다 — 문서가 `none` 을 함께 지원한다고 밝히면 공개 클라이언트로
+  받는다(`apps/oauth/cimd.py`, 기동 시 ChatGPT 표본으로 자체 검사). `none` 이 없으면 여전히 거부한다.
+- **Codex 앱·Claude Code 가 OAuth(loopback 콜백)로 연결된다(#7).** 둘 다 `http://127.0.0.1/callback`·
+  `http://localhost/callback` 에 임시 포트로 콜백을 받는데, 운영은 https 콜백만 등록해 CIMD·DCR 등록이
+  `invalid_scheme` 으로 떨어졌다. 전역 스킴(`https` 뿐, E003)은 그대로 두고, `Application.get_allowed_schemes()` 를
+  감싸 **앱의 http redirect 가 모두 loopback 호스트일 때만** `http` 를 더한다(`apps/oauth/redirects.py`).
+  `ALLOW_LOCALHOST_LOOPBACK` 을 켜 `localhost` 도 포트 무관 매칭한다. 그 밖의 http 콜백은 여전히 거부된다.
+  DOT 에 같은 판정을 상류 제안한다(docs/reports/H-7.md) — 들어오면 걷는다.
+- 인가 오류·빈 도구함 화면의 「Claude 에서 다시 시도하세요」 를 「연결을 요청한 앱에서」 로 바꿨다.
+
+### 추가
+
+- loopback 콜백으로 돌아가는 연결이면 동의 화면이 「이 컴퓨터의 프로그램으로 돌아갑니다 — 직접 시작한 연결이
+  아니면 거부하세요」 경고를 띄운다(MCP 인가 사양 권고).
+
 ## [0.5.5] — 2026-09-20
 
 ### 변경

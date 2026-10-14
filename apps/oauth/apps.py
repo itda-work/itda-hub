@@ -7,6 +7,7 @@ class OAuthConfig(AppConfig):
     verbose_name = '인가 서버'
 
     def ready(self):
-        from apps.oauth import cimd
+        from apps.oauth import cimd, redirects
 
         cimd.install()
+        redirects.install()

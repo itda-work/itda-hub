@@ -17,7 +17,7 @@ from oauth2_provider import cimd
 from oauth2_provider.models import get_application_model
 
 from apps.catalog.models import Tool
-from apps.oauth.cimd import CLAUDE_AI_SAMPLE, install
+from apps.oauth.cimd import CHATGPT_SAMPLE, CLAUDE_AI_SAMPLE, install
 from apps.toolbox.models import ToolboxEntry
 
 CLIENT_ID = CLAUDE_AI_SAMPLE['client_id']
@@ -56,7 +56,7 @@ def signed_in(client, user, db):
     return client
 
 
-def _authorize(client, scope='tool:kosis tool:weather'):
+def _authorize(client, scope='tool:kosis tool:weather', client_id=CLIENT_ID, redirect_uri=REDIRECT):
     verifier = secrets.token_urlsafe(48)
     challenge = (
         base64.urlsafe_b64encode(hashlib.sha256(verifier.encode()).digest()).rstrip(b'=').decode()
@@ -64,9 +64,9 @@ def _authorize(client, scope='tool:kosis tool:weather'):
     return client.get(
         '/o/authorize/',
         {
-            'client_id': CLIENT_ID,
+            'client_id': client_id,
             'response_type': 'code',
-            'redirect_uri': REDIRECT,
+            'redirect_uri': redirect_uri,
             'scope': scope,
             'state': 'st',
             'code_challenge': challenge,
@@ -80,8 +80,10 @@ def _authorize(client, scope='tool:kosis tool:weather'):
 
 def test_기동_시_완화_패치가_적용돼_있다():
     assert getattr(cimd._resolve_grant_type, 'hub_relaxed', False)
+    assert getattr(cimd._build_application_kwargs, 'hub_relaxed', False)
     assert install() is True, '두 번 불러도 겹쳐 감싸지 않고 통과'
     assert not getattr(cimd._resolve_grant_type.__wrapped__, 'hub_relaxed', False)
+    assert not getattr(cimd._build_application_kwargs.__wrapped__, 'hub_relaxed', False)
 
 
 def test_claude_ai_문서의_grant_3종은_authorization_code_로_해석된다():
@@ -102,6 +104,44 @@ def test_지원_grant_가_정확히_하나가_아니면_여전히_거부한다(g
     with pytest.raises(cimd.CIMDError, match='exactly one supported grant type') as exc:
         cimd._build_application_kwargs(_doc(grant_types=grant_types))
     assert repr(grant_types) in str(exc.value), '실패 로그에 문서의 grant 목록이 남는다'
+
+
+# --- 인증 방식(ChatGPT 웹 커넥터, #7) ---
+
+
+def test_ChatGPT_문서는_none_을_함께_지원하므로_공개_클라이언트로_해석된다():
+    kwargs = cimd._build_application_kwargs(CHATGPT_SAMPLE)
+    assert kwargs['authorization_grant_type'] == 'authorization-code'
+    assert kwargs['redirect_uris'] == 'https://chatgpt.com/connector_platform_oauth_redirect'
+
+
+@pytest.mark.parametrize(
+    'supported',
+    [None, ['private_key_jwt'], 'none'],  # 목록 없음 · none 없음 · 목록이 아님
+)
+def test_none_을_지원한다고_밝히지_않은_비공개_인증은_여전히_거부한다(supported):
+    doc = copy.deepcopy(CHATGPT_SAMPLE)
+    if supported is None:
+        del doc['token_endpoint_auth_methods_supported']
+    else:
+        doc['token_endpoint_auth_methods_supported'] = supported
+    with pytest.raises(cimd.CIMDError, match='must be public'):
+        cimd._build_application_kwargs(doc)
+
+
+def test_인증_방식을_완화해도_client_secret_금지는_그대로다():
+    doc = copy.deepcopy(CHATGPT_SAMPLE)
+    doc['client_secret'] = 'x'
+    with pytest.raises(cimd.CIMDError, match='client_secret'):
+        cimd._build_application_kwargs(doc)
+
+
+def test_ChatGPT_문서로_공개_Application_이_만들어진다(serve, db):
+    serve(copy.deepcopy(CHATGPT_SAMPLE))
+    app = cimd.resolve_cimd_application(CHATGPT_SAMPLE['client_id'], request=None)
+    assert app is not None
+    assert app.client_type == get_application_model().CLIENT_PUBLIC
+    assert app.name == 'ChatGPT'
 
 
 def test_claude_ai_문서로_Application_이_만들어진다(serve, db):
@@ -127,6 +167,18 @@ def test_CIMD_실패_로그에_문서_URL과_grant_목록이_남는다(serve, db
 def test_claude_ai_문서로_인가하면_동의_폼이_나온다(signed_in, serve):
     serve(_doc())
     page = _authorize(signed_in)
+    assert page.status_code == 200
+    assert page.context['scopes'] == ['tool:kosis', 'tool:weather']
+    assert b'id="authorizationForm"' in page.content
+
+
+def test_ChatGPT_문서로_인가하면_동의_폼이_나온다(signed_in, serve):
+    serve(copy.deepcopy(CHATGPT_SAMPLE))
+    page = _authorize(
+        signed_in,
+        client_id=CHATGPT_SAMPLE['client_id'],
+        redirect_uri=CHATGPT_SAMPLE['redirect_uris'][0],
+    )
     assert page.status_code == 200
     assert page.context['scopes'] == ['tool:kosis', 'tool:weather']
     assert b'id="authorizationForm"' in page.content

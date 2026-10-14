@@ -148,11 +148,13 @@ def test_HSTS_는_https_로_본_요청에만_붙는다(https):
     assert https['healthz_bare_status'] in (200, 503), 'SSL 리디렉트(301)로 튀지 않는다'
 
 
-def test_운영에서는_https_콜백만_등록된다(https):
-    """claude.ai·Cowork 콜백(https)은 등록되고, http 루프백은 거부된다(RFC 9700 §2.1)."""
+def test_운영에서_http_콜백은_loopback_만_등록된다(https):
+    """전역 스킴은 https 뿐이고(E003), http 는 loopback 호스트만 앱별로 연다(RFC 8252 §7.3 · RFC 9700 §2.1, #7)."""
     assert https['redirect_schemes'] == ['https']
     assert https['dcr_https'] == 201
-    assert https['dcr_http_loopback'] == 400
+    assert https['dcr_http_loopback'] == 201
+    assert https['dcr_http_localhost'] == 201
+    assert https['dcr_http_other'] == 400
 
 
 def test_구글이_켜지면_로컬_가입만_닫힌다(google):

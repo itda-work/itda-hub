@@ -30,7 +30,7 @@ fastmcp 의 Google 제공자(프록시)를 쓰지 않는 이유: Claude 가 Goog
 브라우저 ──로그인──▶ Django(web)   /  /o/*  /.well-known/*  /toolbox(도구함·설정)  /trajectory  /admin  /healthz
 Claude ────OAuth───▶ Django(web)   동의 화면 · 토큰 · introspection
 Claude ────MCP────▶ mcp_server    /mcp  (fastmcp · Streamable HTTP · introspection 으로 토큰 검증)
-Claude Code ─Bearer▶ mcp_server    같은 /mcp — 연결 토큰도 같은 introspection 을 지난다
+Claude Code ─Bearer▶ mcp_server    같은 /mcp — 연결 토큰도 같은 introspection 을 지난다(OAuth 로도 붙는다 — loopback 콜백)
                        │ ORM(같은 SQLite, WAL)
                        └── 도구함·설정 읽기 · 궤적(ToolCall) 쓰기 · 도구 어댑터(HTTPS GET)
 ```
@@ -44,6 +44,8 @@ Django 안에 MCP 를 호스팅하지 않는다(django-itda 결정). compose 에
 - MCP 서버는 401 에 `WWW-Authenticate: Bearer resource_metadata=...` 를 실어 위 문서를 가리킨다.
 - Claude 의 클라이언트 신원은 CIMD(공개 신원) 우선, DCR 병행. 콜백 `https://claude.ai/api/mcp/auth_callback`.
   CIMD 문서의 `grant_types` 중 허브가 지원하지 않는 것(예: `jwt-bearer`)은 무시하고 지원 grant 가 정확히 하나일 때만 받는다 — DOT 규칙을 기동 시 감싼다(`apps/oauth/cimd.py`, H-5).
+  CIMD 허용 호스트는 `claude.ai`·`chatgpt.com`. 단수 `token_endpoint_auth_method` 가 `none` 이 아니어도 `token_endpoint_auth_methods_supported` 에 `none` 이 있으면 공개 클라이언트로 받는다(ChatGPT 웹 커넥터 — 교집합에서 `none` 을 고른다, #7).
+  운영의 redirect 스킴은 https 뿐이고, http 는 앱의 redirect 가 모두 loopback 호스트일 때만 앱별로 연다(Codex 앱·Claude Code, `apps/oauth/redirects.py`, #7). loopback 콜백이면 동의 화면이 「직접 시작한 연결인지」 경고한다.
 
 ## 자격증명
 

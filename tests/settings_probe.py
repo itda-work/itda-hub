@@ -55,10 +55,12 @@ def main(scenario: str) -> dict:
             Client().get('/healthz', HTTP_HOST='hub-web').get('Strict-Transport-Security', '')
         )
         out['healthz_bare_status'] = Client().get('/healthz', HTTP_HOST='hub-web').status_code
-        # 운영(https)에서 등록되는 콜백 스킴 — DCR 로 https 와 http 루프백을 각각 등록해 본다.
+        # 운영(https)에서 등록되는 콜백 — DCR 로 https · http loopback · 그 밖의 http 를 각각 등록해 본다.
         out['redirect_schemes'] = settings.OAUTH2_PROVIDER['ALLOWED_REDIRECT_URI_SCHEMES']
         out['dcr_https'] = _dcr(proxied, 'https://claude.ai/api/mcp/auth_callback')
         out['dcr_http_loopback'] = _dcr(proxied, 'http://127.0.0.1:33418/callback')
+        out['dcr_http_localhost'] = _dcr(proxied, 'http://localhost/callback')
+        out['dcr_http_other'] = _dcr(proxied, 'http://hub-callback.example/callback')
 
     if scenario == 'google':
         out['google_installed'] = (

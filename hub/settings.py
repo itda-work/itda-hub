@@ -216,7 +216,8 @@ OAUTH2_PROVIDER = {
     ],
     'CIMD_ENABLED': True,
     'CIMD_REGISTRATION_PERMISSION_CLASSES': ('oauth2_provider.cimd.HostAllowlistCIMDPermission',),
-    'CIMD_ALLOWED_HOSTS': ['claude.ai', '.claude.ai'],
+    # claude.ai·Cowork, ChatGPT 웹 커넥터(chatgpt.com/oauth/client.json)와 Codex 앱(chatgpt.com/oauth/codex/client.json).
+    'CIMD_ALLOWED_HOSTS': ['claude.ai', '.claude.ai', 'chatgpt.com'],
     # DCR 은 CIMD 폴백. 연결마다 클라이언트가 쌓이므로 CIMD 가 우선이다.
     'DCR_ENABLED': True,
     'DCR_REGISTRATION_PERMISSION_CLASSES': ('oauth2_provider.dcr.AllowAllDCRPermission',),
@@ -238,10 +239,12 @@ OAUTH2_PROVIDER = {
     'REFRESH_TOKEN_REUSE_PROTECTION': True,
     'COMPLIANT_BCP_RFC9700_REFRESH_TOKEN': True,
     'COMPLIANT_BCP_RFC9700_REDIRECT_URI_MATCHING': True,
-    # 공개(https) 배포에서는 https 콜백만 받는다 — claude.ai·Cowork 콜백은 https://claude.ai/api/mcp/auth_callback.
-    # 로컬(http://localhost)은 http 도 받는다. 대가: 운영에서 네이티브 앱의 http 루프백 콜백(RFC 8252)은 등록되지 않는다 —
-    # Claude Code 는 OAuth 대신 연결 토큰(Bearer)으로 붙으므로 영향이 없다.
+    # 공개(https) 배포에서는 전역으로 https 콜백만 받는다 — claude.ai·Cowork·ChatGPT 웹 콜백은 https 다.
+    # 로컬(http://localhost)은 http 도 받는다. 네이티브 앱(Codex 앱·Claude Code)의 http loopback 콜백(RFC 8252)은
+    # apps/oauth/redirects.py 가 앱별로 연다 — http redirect 가 모두 loopback 호스트일 때만(#7).
     'ALLOWED_REDIRECT_URI_SCHEMES': ['https'] if HUB_HTTPS else ['http', 'https'],
+    # localhost 콜백도 loopback 으로(포트 무관 매칭). RFC 8252 §8.3 은 권하지 않지만 Codex·Claude Code 가 쓴다.
+    'ALLOW_LOCALHOST_LOOPBACK': True,
     'COMPLIANT_BCP_RFC9700_REDIRECT_URI_SCHEME': HUB_HTTPS,
 }
 

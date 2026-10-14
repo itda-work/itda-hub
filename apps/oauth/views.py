@@ -17,6 +17,7 @@ from oauth2_provider.views import AuthorizationView
 from oauthlib.oauth2 import AccessDeniedError
 from oauthlib.oauth2.rfc6749.errors import InvalidClientIdError
 
+from apps.oauth.redirects import is_loopback_http
 from apps.toolbox.models import granted_scopes
 
 
@@ -49,6 +50,8 @@ class ToolboxAuthorizationView(AuthorizationView):
         if not context.get('scopes'):
             # 검증은 통과했고 요청 스코프와 도구함의 교집합이 비었다.
             return render(request, 'oauth/empty_toolbox.html', status=200)
+        # loopback 콜백은 이 컴퓨터의 아무 프로그램이나 받을 수 있다 — 사용자가 직접 시작한 연결인지 묻는다(MCP 인가 사양).
+        context['loopback_redirect'] = is_loopback_http(context.get('redirect_uri') or '')
         return response
 
     def create_authorization_response(self, request, scopes, credentials, allow):
